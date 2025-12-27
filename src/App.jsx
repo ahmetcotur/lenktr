@@ -22,40 +22,43 @@ import SettingsPage from './pages/SettingsPage';
 import RedirectHandler from './pages/RedirectHandler';
 
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { HelmetProvider } from 'react-helmet-async';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/upgrade" element={<UpgradePlan />} />
+    <HelmetProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/upgrade" element={<UpgradePlan />} />
 
-        {/* Content Pages */}
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/security" element={<SecurityPage />} />
+          {/* Content Pages */}
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/security" element={<SecurityPage />} />
 
-        {/* Protected Dashboard Routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><AppLayout><DashboardOverview /></AppLayout></ProtectedRoute>} />
-        <Route path="/links" element={<ProtectedRoute><AppLayout><ShortLinkManager /></AppLayout></ProtectedRoute>} />
-        <Route path="/bio" element={<ProtectedRoute><AppLayout><BioPagesList /></AppLayout></ProtectedRoute>} />
-        <Route path="/bio/editor" element={<ProtectedRoute><AppLayout><BioLinkEditor /></AppLayout></ProtectedRoute>} />
-        <Route path="/analytics" element={<ProtectedRoute><AppLayout><AnalyticsDashboard /></AppLayout></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
+          {/* Protected Dashboard Routes */}
+          <Route path="/dashboard" element={<ProtectedRoute><AppLayout><DashboardOverview /></AppLayout></ProtectedRoute>} />
+          <Route path="/links" element={<ProtectedRoute><AppLayout><ShortLinkManager /></AppLayout></ProtectedRoute>} />
+          <Route path="/bio" element={<ProtectedRoute><AppLayout><BioPagesList /></AppLayout></ProtectedRoute>} />
+          <Route path="/bio/editor" element={<ProtectedRoute><AppLayout><BioLinkEditor /></AppLayout></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><AppLayout><AnalyticsDashboard /></AppLayout></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
 
-        {/* Dynamic Slugs (Links or Bio Pages) */}
-        <Route path="/:slug" element={<RedirectHandler />} />
+          {/* Dynamic Slugs (Links or Bio Pages) */}
+          <Route path="/:slug" element={<RedirectHandler />} />
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </HelmetProvider>
   );
 }
 

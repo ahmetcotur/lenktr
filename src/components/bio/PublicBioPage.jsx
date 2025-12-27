@@ -1,9 +1,6 @@
 import React from 'react';
-import {
-    Check,
-    Share2,
-    AlertTriangle,
-} from 'lucide-react';
+import { Share2, Check } from 'lucide-react';
+import SEO from '../SEO';
 import {
     FaXTwitter,
     FaInstagram,
@@ -135,6 +132,16 @@ const PublicBioPage = ({ pageData }) => {
 
     return (
         <div className="min-h-screen relative flex items-center justify-center overflow-x-hidden" style={{ fontFamily: font }}>
+            {/* SEO Meta Tags */}
+            <SEO
+                title={`${profile_title || 'Bio Page'} | LENK.TR`}
+                description={profile_bio || 'Check out my bio page on LENK.TR'}
+                image={avatar || '/og-image.png'}
+                url={`/${pageData.slug}`}
+                type="profile"
+                keywords={`${profile_title}, bio page, social links, ${pageData.slug}`}
+            />
+
             {/* Wallpaper Background */}
             <div
                 className="fixed inset-0 z-0"

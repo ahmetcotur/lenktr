@@ -5,6 +5,7 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import SEO from '../components/SEO';
 
 const LanguageSwitcher = () => {
     const { i18n } = useTranslation();
@@ -160,6 +161,14 @@ const LandingPage = () => {
 
     return (
         <div className="min-h-screen bg-[#08090D] text-white selection:bg-blue-500/30 font-sans">
+            {/* SEO Meta Tags */}
+            <SEO
+                title="LENK.TR - Modern Link Management & Bio Pages"
+                description="Create beautiful bio pages and manage your links with LENK.TR. Modern, fast, and easy to use link management platform for creators and businesses."
+                keywords="link management, bio page, linktree alternative, social media links, bio link, link in bio, url shortener, link tracking, analytics"
+                url="/"
+            />
+
             {/* Ambient Background Engine */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[160px] rounded-full animate-pulse"></div>
