@@ -36,40 +36,56 @@ const DashboardOverview = () => {
             if (!user) return;
             setLoading(true);
             try {
-                // Fetch only counts and recent items, not all data
-                const [linksRes, bioRes] = await Promise.all([
+                // Fetch all data for totals and recent items separately
+                const [allLinksRes, allBioRes, recentLinksRes, recentBioRes] = await Promise.all([
+                    // Get all links for totals
+                    supabase
+                        .from('links')
+                        .select('clicks, is_archived')
+                        .eq('user_id', user.id),
+                    // Get all bio pages for totals
+                    supabase
+                        .from('bio_pages')
+                        .select('views, is_published')
+                        .eq('user_id', user.id),
+                    // Get recent links for display
                     supabase
                         .from('links')
                         .select('id, title, short_slug, clicks, is_archived')
                         .eq('user_id', user.id)
                         .order('created_at', { ascending: false })
-                        .limit(5), // Only fetch 5 most recent
+                        .limit(5),
+                    // Get recent bio pages for display
                     supabase
                         .from('bio_pages')
                         .select('id, profile_title, slug, views, is_published')
                         .eq('user_id', user.id)
                         .order('created_at', { ascending: false })
-                        .limit(5) // Only fetch 5 most recent
+                        .limit(5)
                 ]);
 
-                if (linksRes.error) throw linksRes.error;
-                if (bioRes.error) throw bioRes.error;
+                if (allLinksRes.error) throw allLinksRes.error;
+                if (allBioRes.error) throw allBioRes.error;
+                if (recentLinksRes.error) throw recentLinksRes.error;
+                if (recentBioRes.error) throw recentBioRes.error;
 
-                const links = linksRes.data || [];
-                const bioPages = bioRes.data || [];
+                const allLinks = allLinksRes.data || [];
+                const allBioPages = allBioRes.data || [];
+                const recentLinks = recentLinksRes.data || [];
+                const recentBioPages = recentBioRes.data || [];
 
-                const totalClicks = links.reduce((acc, l) => acc + (l.clicks || 0), 0);
-                const totalViews = bioPages.reduce((acc, p) => acc + (p.views || 0), 0);
-                const activeLinks = links.filter(l => !l.is_archived).length;
-                const activeBioPages = bioPages.filter(p => p.is_published).length;
+                const totalClicks = allLinks.reduce((acc, l) => acc + (l.clicks || 0), 0);
+                const totalViews = allBioPages.reduce((acc, p) => acc + (p.views || 0), 0);
+                const activeLinks = allLinks.filter(l => !l.is_archived).length;
+                const activeBioPages = allBioPages.filter(p => p.is_published).length;
 
                 setDashboardData({
                     totalClicks,
                     totalViews,
                     activeLinks,
                     activeBioPages,
-                    recentLinks: links.slice(0, 3),
-                    recentBioPages: bioPages.slice(0, 3)
+                    recentLinks: recentLinks.slice(0, 3),
+                    recentBioPages: recentBioPages.slice(0, 3)
                 });
             } catch (err) {
                 console.error('Error fetching dashboard data:', err);
@@ -79,7 +95,7 @@ const DashboardOverview = () => {
         };
 
         fetchDashboardData();
-    }, [user?.id]); // Changed from [user] to [user?.id] to prevent infinite loop
+    }, [user?.id]);
 
     if (loading) {
         return (
