@@ -6,7 +6,7 @@
 -- You can find it by running: SELECT id FROM auth.users WHERE email = 'your@email.com';
 DO $$
 DECLARE
-    user_id UUID := 'e8270a84-d4f5-4dfc-8721-26f956ce943d'; -- Replace with your user ID
+    user_id UUID := '1218247a-2b7f-4dd9-96d8-fba4d47018b3'; -- Your actual user ID
     ahmet_bio_id UUID;
     designer_bio_id UUID;
     developer_bio_id UUID;
