@@ -145,7 +145,7 @@ const AnalyticsDashboard = () => {
         };
 
         fetchAnalytics();
-    }, [user]);
+    }, [user?.id]); // Changed from [user] to [user?.id] to prevent infinite loop
 
     // Graph constants
     const dataPoints = stats.chartData;

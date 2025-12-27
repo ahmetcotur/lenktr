@@ -54,7 +54,7 @@ const BioPagesList = () => {
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [user?.id]); // Changed from [user] to [user?.id] to prevent infinite loop
 
     React.useEffect(() => {
         fetchBioPages();
