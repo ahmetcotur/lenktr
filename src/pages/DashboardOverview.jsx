@@ -36,10 +36,20 @@ const DashboardOverview = () => {
             if (!user) return;
             setLoading(true);
             try {
-                // Fetch links and bio pages
+                // Fetch only counts and recent items, not all data
                 const [linksRes, bioRes] = await Promise.all([
-                    supabase.from('links').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-                    supabase.from('bio_pages').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5)
+                    supabase
+                        .from('links')
+                        .select('id, title, short_slug, clicks, is_archived')
+                        .eq('user_id', user.id)
+                        .order('created_at', { ascending: false })
+                        .limit(5), // Only fetch 5 most recent
+                    supabase
+                        .from('bio_pages')
+                        .select('id, profile_title, slug, views, is_published')
+                        .eq('user_id', user.id)
+                        .order('created_at', { ascending: false })
+                        .limit(5) // Only fetch 5 most recent
                 ]);
 
                 if (linksRes.error) throw linksRes.error;
@@ -69,7 +79,7 @@ const DashboardOverview = () => {
         };
 
         fetchDashboardData();
-    }, [user]);
+    }, [user?.id]); // Changed from [user] to [user?.id] to prevent infinite loop
 
     if (loading) {
         return (

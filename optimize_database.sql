@@ -25,9 +25,3 @@ ANALYZE public.bio_pages;
 ANALYZE public.links;
 ANALYZE public.profiles;
 ANALYZE public.traffic_logs;
-
--- Vacuum to reclaim storage and update statistics
-VACUUM ANALYZE public.bio_pages;
-VACUUM ANALYZE public.links;
-VACUUM ANALYZE public.profiles;
-VACUUM ANALYZE public.traffic_logs;
