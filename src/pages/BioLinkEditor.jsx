@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, GripVertical, Eye, Save, Palette, Type, Layout, Upload, Image, ChevronLeft, ChevronDown, Check, Calendar, ShieldAlert, Cookie, Share2, Lock, AlertTriangle, Activity } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Eye, Save, Palette, Type, Layout, Upload, Image, ChevronLeft, ChevronDown, Check, Calendar, ShieldAlert, Cookie, Share2, Lock, AlertTriangle, Activity, Globe, Mail, Send } from 'lucide-react';
 import { FaXTwitter, FaInstagram, FaFacebook, FaLinkedin, FaYoutube, FaTiktok, FaGithub, FaDiscord } from 'react-icons/fa6';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
