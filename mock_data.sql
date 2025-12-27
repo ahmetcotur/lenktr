@@ -12,6 +12,11 @@ DECLARE
     developer_bio_id UUID;
 BEGIN
 
+-- First, ensure the user has a profile
+INSERT INTO public.profiles (id, full_name, role, avatar_url)
+VALUES (user_id, 'Ahmet Çötür', 'Operator', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400')
+ON CONFLICT (id) DO NOTHING;
+
 -- 1. Ahmet Çötür - Professional Photographer Bio Page
 INSERT INTO public.bio_pages (
     user_id,
