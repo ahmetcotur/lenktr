@@ -37,6 +37,7 @@ const BioPagesList = () => {
             return;
         }
         setLoading(true);
+        setError(null); // Clear previous errors
         try {
             console.log('Fetching bio pages for user:', user.id);
             const { data, error } = await supabase
@@ -46,15 +47,18 @@ const BioPagesList = () => {
                 .order('created_at', { ascending: false });
 
             console.log('Bio pages response:', { data, error });
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase error:', error);
+                throw new Error(error.message || 'Failed to fetch bio pages');
+            }
             setBioPages(data || []);
         } catch (err) {
             console.error('Error fetching bio pages:', err);
-            setError(err.message);
+            setError(err.message || 'Failed to fetch bio pages. Please check your connection.');
         } finally {
             setLoading(false);
         }
-    }, [user?.id]); // Changed from [user] to [user?.id] to prevent infinite loop
+    }, [user?.id]);
 
     React.useEffect(() => {
         fetchBioPages();
