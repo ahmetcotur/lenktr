@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and private routes
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /analytics
+Disallow: /links
+Disallow: /bio/editor
+
+# Sitemap
+Sitemap: https://lenk.tr/sitemap.xml
