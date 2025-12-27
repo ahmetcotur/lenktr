@@ -1,0 +1,9 @@
+name = "lenk-tr"
+compatibility_date = "2025-12-27"
+
+[site]
+bucket = "./dist"
+
+# Environment variables (set these in Cloudflare dashboard)
+# VITE_SUPABASE_URL
+# VITE_SUPABASE_ANON_KEY
