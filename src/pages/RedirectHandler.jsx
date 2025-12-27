@@ -57,6 +57,7 @@ const RedirectHandler = () => {
                     .from('bio_pages')
                     .select('*')
                     .eq('slug', slug)
+                    .eq('is_published', true) // Only fetch published pages
                     .single();
 
                 if (bioPage && !bioError) {
