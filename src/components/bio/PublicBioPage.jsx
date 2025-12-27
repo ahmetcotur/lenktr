@@ -111,6 +111,28 @@ const PublicBioPage = ({ pageData }) => {
 
     const style = uiStyles.find(s => s.id === uiStyle) || uiStyles[0];
 
+    const handleShare = async () => {
+        const shareData = {
+            title: profile_title || 'Bio Page',
+            text: profile_bio || 'Check out my bio page!',
+            url: window.location.href
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                // Fallback: copy to clipboard
+                await navigator.clipboard.writeText(window.location.href);
+                alert('Link copied to clipboard!');
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error('Error sharing:', err);
+            }
+        }
+    };
+
     return (
         <div className="min-h-screen relative flex items-center justify-center overflow-x-hidden" style={{ fontFamily: font }}>
             {/* Wallpaper Background */}
@@ -152,7 +174,11 @@ const PublicBioPage = ({ pageData }) => {
 
                     {/* Share Button */}
                     {shareButton && (
-                        <button className="absolute top-8 right-8 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 transition-all z-20">
+                        <button
+                            onClick={handleShare}
+                            className="absolute top-8 right-8 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 transition-all z-20 hover:scale-110"
+                            title="Share this page"
+                        >
                             <Share2 size={20} />
                         </button>
                     )}
