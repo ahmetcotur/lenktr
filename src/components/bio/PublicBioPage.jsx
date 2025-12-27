@@ -186,7 +186,7 @@ const PublicBioPage = ({ pageData }) => {
 
                     {/* Links */}
                     <div className="w-full space-y-4 mb-12">
-                        {links.filter(l => l.isActive).map((link) => (
+                        {links.filter(l => l.isActive || l.visible).map((link) => (
                             <a
                                 key={link.id}
                                 href={link.url}
@@ -201,17 +201,17 @@ const PublicBioPage = ({ pageData }) => {
                     </div>
 
                     {/* Social Media Icons */}
-                    {socialMedia.some(s => s.isActive && s.url) && (
+                    {socialMedia.some(s => (s.isActive || s.active) && s.url) && (
                         <div className="flex justify-center gap-5 mb-8">
-                            {socialMedia.filter(s => s.isActive && s.url).map((social) => (
+                            {socialMedia.filter(s => (s.isActive || s.active) && s.url).map((social) => (
                                 <a
-                                    key={social.platform}
+                                    key={social.platform || social.id}
                                     href={social.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg border border-white/10"
                                 >
-                                    <span className="text-2xl">{socialIcons[social.platform]}</span>
+                                    <span className="text-2xl">{socialIcons[social.platform || social.id]}</span>
                                 </a>
                             ))}
                         </div>
