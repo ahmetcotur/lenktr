@@ -30,7 +30,7 @@ import { useAuth } from '../context/AuthContext';
 const supabase = createClient();
 
 // Sortable Link Item Component
-const SortableLinkItem = ({ link, updateLink, toggleLinkVisibility, deleteLink }) => {
+const SortableLinkItem = ({ link, updateLink, toggleLinkVisibility, deleteLink, setIconPickerOpen }) => {
     const {
         attributes,
         listeners,
@@ -603,6 +603,7 @@ const BioLinkEditor = () => {
                                             updateLink={updateLink}
                                             toggleLinkVisibility={toggleLinkVisibility}
                                             deleteLink={deleteLink}
+                                            setIconPickerOpen={setIconPickerOpen}
                                         />
                                     ))}
                                 </div>

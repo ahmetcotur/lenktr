@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  lenk-tr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - lenk-network
+
+networks:
+  lenk-network:
+    driver: bridge
