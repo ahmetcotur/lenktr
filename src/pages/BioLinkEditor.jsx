@@ -5,6 +5,7 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import ColorPicker from '../components/ui/ColorPicker';
 import ImageUploader from '../components/ui/ImageUploader';
+import Toast from '../components/ui/Toast';
 import {
     DndContext,
     closestCenter,
@@ -215,6 +216,7 @@ const BioLinkEditor = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [bioPageId, setBioPageId] = useState(null);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
         const fetchBioPage = async () => {
@@ -277,7 +279,8 @@ const BioLinkEditor = () => {
     const handleSave = async () => {
         if (!user) return;
         if (!slug) {
-            alert('Please enter a slug for your page');
+            setToast({ message: 'Please enter a slug for your page', type: 'error' });
+            setTimeout(() => setToast(null), 3000);
             return;
         }
 
@@ -303,6 +306,7 @@ const BioLinkEditor = () => {
                     .eq('id', bioPageId);
 
                 if (updateError) throw updateError;
+                setToast({ message: '✨ Bio page updated successfully!', type: 'success' });
             } else {
                 const { data: newData, error: insertError } = await supabase
                     .from('bio_pages')
@@ -312,11 +316,13 @@ const BioLinkEditor = () => {
 
                 if (insertError) throw insertError;
                 if (newData) setBioPageId(newData.id);
+                setToast({ message: '🎉 Bio page created successfully!', type: 'success' });
             }
 
-            alert('Bio page saved successfully!');
+            setTimeout(() => setToast(null), 3000);
         } catch (err) {
-            alert('Error saving bio page: ' + err.message);
+            setToast({ message: 'Error: ' + err.message, type: 'error' });
+            setTimeout(() => setToast(null), 4000);
         } finally {
             setSaving(false);
         }
@@ -480,6 +486,15 @@ const BioLinkEditor = () => {
 
     return (
         <div className="flex h-screen bg-[#08090D] text-white overflow-hidden font-sans">
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+
             {/* Sidebar Controls */}
             <div className="w-[450px] flex flex-col border-r border-white/5 bg-[#0D0F14]/95 backdrop-blur-xl h-full z-20 shadow-2xl">
                 <div className="p-6 border-b border-white/5 flex items-center gap-4 shrink-0 bg-[#0D0F14]">
