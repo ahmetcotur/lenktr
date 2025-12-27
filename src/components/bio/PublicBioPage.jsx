@@ -182,6 +182,23 @@ const PublicBioPage = ({ pageData }) => {
                         </div>
 
                         <p className="text-base text-white/80 mb-8 max-w-[320px] leading-relaxed drop-shadow-sm font-medium">{profile_bio}</p>
+
+                        {/* Social Media Icons */}
+                        {socialMedia.some(s => (s.isActive || s.active) && s.url) && (
+                            <div className="flex justify-center gap-5 mb-8">
+                                {socialMedia.filter(s => (s.isActive || s.active) && s.url).map((social) => (
+                                    <a
+                                        key={social.platform || social.id}
+                                        href={social.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg border border-white/10"
+                                    >
+                                        <span className="text-2xl">{socialIcons[social.platform || social.id]}</span>
+                                    </a>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Links */}
@@ -199,23 +216,6 @@ const PublicBioPage = ({ pageData }) => {
                             </a>
                         ))}
                     </div>
-
-                    {/* Social Media Icons */}
-                    {socialMedia.some(s => (s.isActive || s.active) && s.url) && (
-                        <div className="flex justify-center gap-5 mb-8">
-                            {socialMedia.filter(s => (s.isActive || s.active) && s.url).map((social) => (
-                                <a
-                                    key={social.platform || social.id}
-                                    href={social.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg border border-white/10"
-                                >
-                                    <span className="text-2xl">{socialIcons[social.platform || social.id]}</span>
-                                </a>
-                            ))}
-                        </div>
-                    )}
 
                     {/* Branding */}
                     <a
