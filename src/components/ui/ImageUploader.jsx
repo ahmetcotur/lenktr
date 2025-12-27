@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 import { uploadImage, dataURLtoFile } from '../../utils/supabase/storage';
 import { useAuth } from '../../context/AuthContext';
 
@@ -32,7 +33,19 @@ const ImageUploader = ({ label, value, onChange, presets = [], bucket = 'bio-ima
 
         setUploading(true);
         try {
-            const { url, error } = await uploadImage(file, bucket, user.id);
+            // Compress image before upload
+            const options = {
+                maxSizeMB: 1, // Max file size 1MB
+                maxWidthOrHeight: 1920, // Max dimension 1920px
+                useWebWorker: true,
+                fileType: file.type
+            };
+
+            console.log('Original file size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+            const compressedFile = await imageCompression(file, options);
+            console.log('Compressed file size:', (compressedFile.size / 1024 / 1024).toFixed(2), 'MB');
+
+            const { url, error } = await uploadImage(compressedFile, bucket, user.id);
 
             if (error) {
                 throw error;
@@ -77,9 +90,9 @@ const ImageUploader = ({ label, value, onChange, presets = [], bucket = 'bio-ima
                 onDrop={handleDrop}
                 onClick={() => !uploading && fileInputRef.current?.click()}
                 className={`relative h-32 rounded-xl border-2 border-dashed transition-all cursor-pointer overflow-hidden ${uploading ? 'border-blue-500 bg-blue-500/10 cursor-wait' :
-                        isDragging
-                            ? 'border-blue-500 bg-blue-500/10'
-                            : 'border-white/10 bg-white/5 hover:border-white/20'
+                    isDragging
+                        ? 'border-blue-500 bg-blue-500/10'
+                        : 'border-white/10 bg-white/5 hover:border-white/20'
                     }`}
             >
                 {uploading ? (
