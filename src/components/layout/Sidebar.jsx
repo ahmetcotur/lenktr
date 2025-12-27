@@ -16,7 +16,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
     const navigate = useNavigate();
-    const { signOut } = useAuth();
+    const { signOut, user } = useAuth();
 
     const handleLogout = async () => {
         const { error } = await signOut();
@@ -102,12 +102,18 @@ const Sidebar = () => {
                     }}
                     className="flex items-center gap-3 w-full p-2 rounded-xl hover:bg-white/5 transition-all group"
                 >
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10">
-                        <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=100" alt="Profile" className="w-full h-full object-cover" />
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-zinc-900 flex items-center justify-center">
+                        {user?.user_metadata?.avatar_url || user?.user_metadata?.avatar ? (
+                            <img src={user.user_metadata.avatar_url || user.user_metadata.avatar} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="text-zinc-600 font-black text-xs">
+                                {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                            </div>
+                        )}
                     </div>
-                    <div className="flex-1 text-left">
-                        <p className="text-sm font-bold text-white leading-none mb-1">Alex Rivera</p>
-                        <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest leading-none">Operator</p>
+                    <div className="flex-1 text-left min-w-0">
+                        <p className="text-sm font-bold text-white leading-none mb-1 truncate">{user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}</p>
+                        <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest leading-none truncate">{user?.user_metadata?.role || 'Operator'}</p>
                     </div>
                     <div className="relative">
                         <div className="w-2 h-2 bg-red-500 rounded-full absolute -top-1 -right-1 border border-[#08090D]"></div>

@@ -23,22 +23,28 @@ import StatsOverlay from '../components/overlays/StatsOverlay';
 import EditLinkOverlay from '../components/overlays/EditLinkOverlay';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '../utils/supabase/client';
+import { useAuth } from '../context/AuthContext';
 
 const supabase = createClient();
 
 const ShortLinkManager = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [activeOverlay, setActiveOverlay] = React.useState({ type: null, link: null });
     const [links, setLinks] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
+    const [filterStatus, setFilterStatus] = React.useState('all'); // all, active, archived
+    const [showFilterMenu, setShowFilterMenu] = React.useState(false);
 
     const fetchLinks = React.useCallback(async () => {
         setLoading(true);
         try {
+            if (!user) return;
             const { data, error } = await supabase
                 .from('links')
                 .select('*')
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -48,7 +54,7 @@ const ShortLinkManager = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user]);
 
     React.useEffect(() => {
         fetchLinks();
@@ -101,7 +107,7 @@ const ShortLinkManager = () => {
         return <StatsOverlay link={activeOverlay.link} onClose={closeOverlay} />;
     }
 
-    if (activeOverlay.type === 'edit' && activeOverlay.link) {
+    if (activeOverlay.type === 'edit') {
         return <EditLinkOverlay link={activeOverlay.link} onClose={closeOverlay} />;
     }
 
@@ -115,9 +121,42 @@ const ShortLinkManager = () => {
                     <p className="text-zinc-500 font-medium max-w-xl">Manage and track your shortened links in one place.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="secondary" size="md">
-                        <Filter size={16} className="mr-2" /> Global Filter
-                    </Button>
+                    <div className="relative">
+                        <Button
+                            variant="secondary"
+                            size="md"
+                            onClick={() => setShowFilterMenu(!showFilterMenu)}
+                        >
+                            <Filter size={16} className="mr-2" /> Global Filter
+                        </Button>
+
+                        {/* Filter Dropdown */}
+                        {showFilterMenu && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setShowFilterMenu(false)}></div>
+                                <div className="absolute top-full right-0 mt-2 w-48 bg-[#0D0F14] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1">
+                                    <button
+                                        onClick={() => { setFilterStatus('all'); setShowFilterMenu(false); }}
+                                        className={`w-full text-left px-4 py-2.5 text-xs font-bold ${filterStatus === 'all' ? 'text-white bg-blue-600/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'} transition-colors`}
+                                    >
+                                        All Links
+                                    </button>
+                                    <button
+                                        onClick={() => { setFilterStatus('active'); setShowFilterMenu(false); }}
+                                        className={`w-full text-left px-4 py-2.5 text-xs font-bold ${filterStatus === 'active' ? 'text-white bg-blue-600/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'} transition-colors`}
+                                    >
+                                        Active Only
+                                    </button>
+                                    <button
+                                        onClick={() => { setFilterStatus('archived'); setShowFilterMenu(false); }}
+                                        className={`w-full text-left px-4 py-2.5 text-xs font-bold ${filterStatus === 'archived' ? 'text-white bg-blue-600/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'} transition-colors`}
+                                    >
+                                        Archived Only
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                     <Button
                         variant="primary"
                         size="lg"
@@ -142,7 +181,19 @@ const ShortLinkManager = () => {
                     />
                 </div>
                 <div className="flex gap-4">
-                    <div className="flex-1 px-4 py-4 rounded-2xl bg-zinc-900/20 border border-dashed border-white/10 flex items-center justify-center gap-3 text-zinc-600 cursor-pointer hover:border-blue-500/30 hover:text-blue-500 transition-all">
+                    <div
+                        onClick={() => {
+                            if (links.length === 0) {
+                                alert('No links to share. Create a link first!');
+                                return;
+                            }
+                            // Create a simple share text with all links
+                            const shareText = links.map(l => `${l.title || 'Link'}: https://lenk.tr/${l.short_slug}`).join('\n');
+                            navigator.clipboard.writeText(shareText);
+                            alert('All links copied to clipboard!');
+                        }}
+                        className="flex-1 px-4 py-4 rounded-2xl bg-zinc-900/20 border border-dashed border-white/10 flex items-center justify-center gap-3 text-zinc-600 cursor-pointer hover:border-blue-500/30 hover:text-blue-500 transition-all"
+                    >
                         <Share2 size={18} />
                         <span className="text-sm font-bold uppercase tracking-widest">Share Links</span>
                     </div>
@@ -164,7 +215,11 @@ const ShortLinkManager = () => {
                             <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
                             <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">Accessing Database...</p>
                         </div>
-                    ) : links.length === 0 ? (
+                    ) : links.filter(link => {
+                        if (filterStatus === 'active') return !link.is_archived;
+                        if (filterStatus === 'archived') return link.is_archived;
+                        return true;
+                    }).length === 0 ? (
                         <div className="p-20 text-center border border-dashed border-white/5 rounded-3xl bg-zinc-900/10">
                             <div className="w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-6 text-zinc-700">
                                 <Link2 size={32} />
@@ -176,7 +231,11 @@ const ShortLinkManager = () => {
                             </Button>
                         </div>
                     ) : (
-                        links.map((link, i) => (
+                        links.filter(link => {
+                            if (filterStatus === 'active') return !link.is_archived;
+                            if (filterStatus === 'archived') return link.is_archived;
+                            return true;
+                        }).map((link, i) => (
                             <div key={link.id || i} className="group relative bg-[#0D0F14]/40 border border-white/5 hover:border-blue-500/30 hover:bg-[#0D0F14]/60 rounded-2xl transition-all duration-300">
                                 <div className="p-5 md:p-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                                     {/* Details */}

@@ -19,6 +19,7 @@ import SecurityPage from './pages/SecurityPage';
 
 import UpgradePlan from './pages/UpgradePlan';
 import SettingsPage from './pages/SettingsPage';
+import RedirectHandler from './pages/RedirectHandler';
 
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
@@ -47,6 +48,9 @@ function App() {
         <Route path="/bio/editor" element={<ProtectedRoute><AppLayout><BioLinkEditor /></AppLayout></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute><AppLayout><AnalyticsDashboard /></AppLayout></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
+
+        {/* Dynamic Slugs (Links or Bio Pages) */}
+        <Route path="/:slug" element={<RedirectHandler />} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

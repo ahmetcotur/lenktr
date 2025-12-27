@@ -1,9 +1,13 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { uploadImage, dataURLtoFile } from '../../utils/supabase/storage';
+import { useAuth } from '../../context/AuthContext';
 
-const ImageUploader = ({ label, value, onChange, presets = [] }) => {
+const ImageUploader = ({ label, value, onChange, presets = [], bucket = 'bio-images' }) => {
     const [isDragging, setIsDragging] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
+    const { user } = useAuth();
 
     const defaultPresets = [
         'https://images.unsplash.com/photo-1557683316-973673baf926?w=400',
@@ -15,24 +19,46 @@ const ImageUploader = ({ label, value, onChange, presets = [] }) => {
 
     const imagePresets = presets.length > 0 ? presets : defaultPresets;
 
+    const handleFileUpload = async (file) => {
+        if (!file || !file.type.startsWith('image/')) {
+            alert('Please select a valid image file');
+            return;
+        }
+
+        if (!user) {
+            alert('You must be logged in to upload images');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const { url, error } = await uploadImage(file, bucket, user.id);
+
+            if (error) {
+                throw error;
+            }
+
+            onChange(url);
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Failed to upload image. Please try again.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleDrop = (e) => {
         e.preventDefault();
         setIsDragging(false);
 
         const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => onChange(e.target.result);
-            reader.readAsDataURL(file);
-        }
+        handleFileUpload(file);
     };
 
     const handleFileSelect = (e) => {
         const file = e.target.files[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => onChange(e.target.result);
-            reader.readAsDataURL(file);
+            handleFileUpload(file);
         }
     };
 
@@ -49,13 +75,21 @@ const ImageUploader = ({ label, value, onChange, presets = [] }) => {
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`relative h-32 rounded-xl border-2 border-dashed transition-all cursor-pointer overflow-hidden ${isDragging
-                        ? 'border-blue-500 bg-blue-500/10'
-                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                className={`relative h-32 rounded-xl border-2 border-dashed transition-all cursor-pointer overflow-hidden ${uploading ? 'border-blue-500 bg-blue-500/10 cursor-wait' :
+                        isDragging
+                            ? 'border-blue-500 bg-blue-500/10'
+                            : 'border-white/10 bg-white/5 hover:border-white/20'
                     }`}
             >
-                {value ? (
+                {uploading ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50">
+                        <Loader2 size={32} className="text-blue-500 animate-spin" />
+                        <p className="text-xs font-bold text-white uppercase tracking-wider">
+                            Uploading...
+                        </p>
+                    </div>
+                ) : value ? (
                     <>
                         <img src={value} alt="Preview" className="w-full h-full object-cover" />
                         <button
@@ -84,6 +118,7 @@ const ImageUploader = ({ label, value, onChange, presets = [] }) => {
                 accept="image/*"
                 onChange={handleFileSelect}
                 className="hidden"
+                disabled={uploading}
             />
 
             {/* Image Presets */}
@@ -93,7 +128,8 @@ const ImageUploader = ({ label, value, onChange, presets = [] }) => {
                         <button
                             key={i}
                             onClick={() => onChange(preset)}
-                            className="aspect-square rounded-lg border-2 border-white/10 hover:border-blue-500/50 hover:scale-105 transition-all overflow-hidden"
+                            disabled={uploading}
+                            className="aspect-square rounded-lg border-2 border-white/10 hover:border-blue-500/50 hover:scale-105 transition-all overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <img src={preset} alt={`Preset ${i + 1}`} className="w-full h-full object-cover" />
                         </button>

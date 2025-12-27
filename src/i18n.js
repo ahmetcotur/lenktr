@@ -37,20 +37,24 @@ i18n
                         desc: 'From minimalist glassmorphism to high-energy neon grids. Express your identity with 100+ customizable themes.'
                     },
                     features: {
-                        badge: 'Platform Overview',
-                        title: 'Hyper Functional.',
-                        speed: 'Lightning Speed',
-                        speedDesc: 'Optimized for sub-100ms load times. Because conversion happens in the blink of an eye.',
-                        security: 'Enterprise Security',
-                        securityDesc: 'Bank-grade encryption and advanced DDoS protection for every link you share.',
-                        intel: 'Deep Intelligence',
-                        intelDesc: 'Go beyond clicks. Understand user behavior, conversion funnels, and retention.'
+                        badge: 'System Capabilities',
+                        title: 'Total Control.',
+                        custom: 'Infinite Design',
+                        customDesc: 'Create unique designs that reflect your brand. Customize every pixel with colors, fonts, and glass effects.',
+                        tools: 'Smart Link Tools',
+                        toolsDesc: 'Manage your digital presence at full capacity with encrypted links, scheduled access, and custom slug support.',
+                        tracking: 'Retargeting & Pixel',
+                        trackingDesc: 'Understand your audience behavior with Facebook, TikTok, and Google pixels to multiply your ad efficiency.'
                     },
                     stats: {
-                        links: 'Links Created',
-                        traffic: 'Monthly Traffic',
-                        uptime: 'Uptime Score',
-                        rating: 'NPS Rating'
+                        s1l: 'Pixel Support',
+                        s1v: 'FB, GGL, TT',
+                        s2l: 'Custom Domain',
+                        s2v: 'Your Brand',
+                        s3l: 'SEO Optimized',
+                        s3v: 'Google Ready',
+                        s4l: 'Password Lock',
+                        s4v: 'Secure Links'
                     },
                     footer: {
                         tagline: 'The ultimate link management platform for modern creators.',
@@ -181,20 +185,24 @@ i18n
                         desc: 'Minimalist glassmorphism\'den yüksek enerjili neon ızgaralara. 100+ özelleştirilebilir tema ile kimliğinizi ifade edin.'
                     },
                     features: {
-                        badge: 'Platforma Bakış',
-                        title: 'Hüper Fonksiyonel.',
-                        speed: 'Işık Hızı',
-                        speedDesc: '100ms altı yükleme süreleri için optimize edildi. Çünkü dönüşüm bir göz kırpma süresinde gerçekleşir.',
-                        security: 'Kurumsal Güvenlik',
-                        securityDesc: 'Paylaştığınız her link için banka düzeyinde şifreleme ve gelişmiş DDoS koruması.',
-                        intel: 'Derin Zeka',
-                        intelDesc: 'Tıklamaların ötesine geçin. Kullanıcı davranışlarını, dönüşüm tünellerini ve elde tutma oranlarını anlayın.'
+                        badge: 'Sistem Kabiliyetleri',
+                        title: 'Kontrol Sende.',
+                        custom: 'Sınırsız Tasarım',
+                        customDesc: 'Markanızı yansıtan benzersiz tasarımlar oluşturun. Renkler, fontlar ve cam efektleriyle her pikseli özelleştirin.',
+                        tools: 'Akıllı Link Araçları',
+                        toolsDesc: 'Şifreli linkler, zamanlanmış erişim ve özel slug desteğiyle dijital varlığınızı tam kapasite yönetin.',
+                        tracking: 'Takip & Piksel',
+                        trackingDesc: 'Facebook, TikTok ve Google pikselleriyle kitlenizin davranışını anlayın ve reklam verimliliğinizi katlayın.'
                     },
                     stats: {
-                        links: 'Oluşturulan Linkler',
-                        traffic: 'Aylık Trafik',
-                        uptime: 'Uptime Skoru',
-                        rating: 'NPS Değerlendirmesi'
+                        s1l: 'Piksel Desteği',
+                        s1v: 'FB, GGL, TT',
+                        s2l: 'Özel Alan Adı',
+                        s2v: 'Kendi Linkin',
+                        s3l: 'SEO Uyumlu',
+                        s3v: 'Google Hazır',
+                        s4l: 'Parola Kilidi',
+                        s4v: 'Güvenli Paylaşım'
                     },
                     footer: {
                         tagline: 'Modern içerik üreticileri için nihai link yönetim platformu.',

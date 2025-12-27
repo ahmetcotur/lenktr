@@ -8,8 +8,12 @@ const chartData = [45, 72, 58, 91, 64, 85, 120];
 const maxVal = Math.max(...chartData);
 
 const StatsOverlay = ({ link, onClose }) => (
-    <div className="fixed inset-0 z-50 bg-[#08090D] overflow-y-auto animate-fade-in">
-        <div className="max-w-7xl mx-auto p-8">
+    <div className="fixed inset-0 z-[60] bg-[#08090D]/95 backdrop-blur-sm overflow-y-auto animate-fade-in">
+        {/* Close overlay background */}
+        <div className="absolute inset-0" onClick={onClose}></div>
+
+        {/* Content container - offset for sidebar */}
+        <div className="relative lg:ml-[300px] max-w-7xl mx-auto p-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-12">
                 <div>
@@ -19,7 +23,7 @@ const StatsOverlay = ({ link, onClose }) => (
                     <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">
                         Analytics <span className="text-lime-500">📊</span>
                     </h1>
-                    <p className="text-zinc-500 font-medium">Detailed stats for <span className="text-white font-bold">{link.slug}</span></p>
+                    <p className="text-zinc-500 font-medium">Detailed stats for <span className="text-white font-bold">{link.short_slug}</span></p>
                 </div>
                 <div className="flex gap-3">
                     <Button variant="outline">

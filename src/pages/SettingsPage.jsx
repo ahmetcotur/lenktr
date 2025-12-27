@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     User,
@@ -15,22 +15,87 @@ import {
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import { useAuth } from '../context/AuthContext';
+import { createClient } from '../utils/supabase/client';
+import { uploadImage } from '../utils/supabase/storage';
+
+const supabase = createClient();
 
 const SettingsPage = () => {
+    const { user: authUser } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get('tab') || 'profile';
+    const avatarInputRef = useRef(null);
 
     const handleTabChange = (tabId) => {
         setSearchParams({ tab: tabId });
     };
 
-    // Mock user state
-    const [user, setUser] = useState({
-        name: 'Alex Rivera',
-        email: 'alex@example.com',
-        avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=256',
-        role: 'Operator'
+    const [profile, setProfile] = useState({
+        name: authUser?.user_metadata?.full_name || '',
+        email: authUser?.email || '',
+        avatar: authUser?.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=256',
+        role: authUser?.user_metadata?.role || 'Operator'
     });
+
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState(null);
+
+    const handleAvatarUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setLoading(true);
+        try {
+            const { url, error } = await uploadImage(file, 'avatars', authUser.id);
+
+            if (error) {
+                setMessage({ type: 'error', text: 'Failed to upload avatar. Please try again.' });
+                return;
+            }
+
+            setProfile({ ...profile, avatar: url });
+            setMessage({ type: 'success', text: 'Avatar uploaded successfully! Click Save Changes to update.' });
+        } catch (error) {
+            console.error('Avatar upload error:', error);
+            setMessage({ type: 'error', text: 'Failed to upload avatar. Please try again.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateProfile = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setMessage(null);
+
+        try {
+            const { error: authError } = await supabase.auth.updateUser({
+                data: {
+                    full_name: profile.name,
+                    avatar_url: profile.avatar
+                }
+            });
+
+            if (authError) throw authError;
+
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .update({
+                    full_name: profile.name,
+                    avatar_url: profile.avatar
+                })
+                .eq('id', authUser.id);
+
+            if (profileError) throw profileError;
+
+            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const [notifications, setNotifications] = useState({
         email_leads: true,
@@ -78,19 +143,47 @@ const SettingsPage = () => {
                             <div className="space-y-8">
                                 <div>
                                     <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6">Public Profile</h2>
+                                    {message && (
+                                        <div className={`p-4 rounded-xl border text-xs font-bold uppercase tracking-wider text-center ${message.type === 'success' ? 'bg-blue-500/10 border-blue-500/20 text-blue-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+                                            {message.text}
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center gap-6 mb-8">
                                         <div className="relative">
-                                            <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white/10">
-                                                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                                            <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white/10 bg-zinc-900 flex items-center justify-center">
+                                                {profile.avatar ? (
+                                                    <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User size={32} className="text-zinc-700" />
+                                                )}
                                             </div>
-                                            <button className="absolute -bottom-2 -right-2 p-2 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-500 transition-colors">
+                                            <button
+                                                onClick={() => avatarInputRef.current?.click()}
+                                                disabled={loading}
+                                                className="absolute -bottom-2 -right-2 p-2 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
                                                 <Upload size={14} />
                                             </button>
+                                            <input
+                                                ref={avatarInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleAvatarUpload}
+                                                className="hidden"
+                                                disabled={loading}
+                                            />
                                         </div>
                                         <div>
-                                            <h3 className="text-white font-bold text-lg mb-1">{user.name}</h3>
-                                            <p className="text-zinc-500 text-sm mb-3">{user.role}</p>
-                                            <Button variant="outline" size="sm">Remove Picture</Button>
+                                            <h3 className="text-white font-bold text-lg mb-1">{profile.name || 'Anonymous User'}</h3>
+                                            <p className="text-zinc-500 text-sm mb-3">{profile.role}</p>
+                                            <button
+                                                onClick={() => setProfile({ ...profile, avatar: '' })}
+                                                disabled={loading}
+                                                className="px-4 py-2 text-xs font-bold text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Remove Picture
+                                            </button>
                                         </div>
                                     </div>
 
@@ -101,8 +194,8 @@ const SettingsPage = () => {
                                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
                                                 <input
                                                     type="text"
-                                                    value={user.name}
-                                                    onChange={(e) => setUser({ ...user, name: e.target.value })}
+                                                    value={profile.name}
+                                                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                                                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
                                                 />
                                             </div>
@@ -113,16 +206,18 @@ const SettingsPage = () => {
                                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
                                                 <input
                                                     type="email"
-                                                    value={user.email}
-                                                    onChange={(e) => setUser({ ...user, email: e.target.value })}
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                                                    value={profile.email}
+                                                    disabled
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white/50 text-sm focus:outline-none cursor-not-allowed"
                                                 />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="border-t border-white/5 pt-6 flex justify-end">
-                                    <Button variant="primary" glow>Save Changes</Button>
+                                    <Button variant="primary" glow onClick={handleUpdateProfile} disabled={loading}>
+                                        {loading ? 'Saving...' : 'Save Changes'}
+                                    </Button>
                                 </div>
                             </div>
                         )}

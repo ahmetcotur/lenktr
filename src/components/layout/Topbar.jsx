@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Search, Globe, Command } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const Topbar = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [showNotifications, setShowNotifications] = useState(false);
     const [notificationsList, setNotificationsList] = useState([
         { id: 1, text: "New click from United States", time: "2m ago", read: false },
@@ -20,6 +22,10 @@ const Topbar = () => {
     const markAllRead = () => {
         setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
     };
+
+    const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+    const userRole = user?.user_metadata?.role || 'Operator';
+    const userAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.avatar;
 
     return (
         <header className="h-16 md:h-20 border-b border-white/5 bg-[#08090D]/50 backdrop-blur-2xl flex items-center justify-between px-4 md:px-8 lg:px-10 sticky top-0 z-40">
@@ -124,16 +130,22 @@ const Topbar = () => {
                     className="flex items-center gap-4 group cursor-pointer"
                 >
                     <div className="flex flex-col items-end">
-                        <span className="text-sm font-black text-white group-hover:text-blue-500 transition-colors">Alex Rivera</span>
+                        <span className="text-sm font-black text-white group-hover:text-blue-500 transition-colors">{userName}</span>
                         <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-lime-500"></div>
-                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-600 group-hover:text-gray-400 transition-colors">Operator</span>
+                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-600 group-hover:text-gray-400 transition-colors">{userRole}</span>
                         </div>
                     </div>
                     <div className="relative">
                         <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 p-0.5 group-hover:rotate-6 transition-transform duration-500 shadow-xl">
                             <div className="w-full h-full bg-[#161A22] rounded-[14px] flex items-center justify-center overflow-hidden">
-                                <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=100" alt="Alex Rivera" />
+                                {userAvatar ? (
+                                    <img src={userAvatar} alt={userName} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="text-white font-black text-lg">
+                                        {userName.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

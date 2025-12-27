@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion as Motion } from 'framer-motion';
-import { ArrowRight, Zap, Shield, BarChart3, Globe, ChevronRight, Play, Star, Plus, Check } from 'lucide-react';
+import { ArrowRight, Zap, Shield, BarChart3, Globe, ChevronRight, Play, Star, Plus, Check, Palette, Settings, Activity } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { Link } from 'react-router-dom';
@@ -31,52 +31,52 @@ const LandingPage = () => {
 
     const features = [
         {
-            icon: Zap,
-            title: t('features.speed'),
-            desc: t('features.speedDesc'),
+            icon: Palette,
+            title: t('features.custom'),
+            desc: t('features.customDesc'),
             color: "text-blue-500",
             bg: "bg-blue-500/10"
         },
         {
-            icon: Shield,
-            title: t('features.security'),
-            desc: t('features.securityDesc'),
+            icon: Settings,
+            title: t('features.tools'),
+            desc: t('features.toolsDesc'),
             color: "text-purple-500",
             bg: "bg-purple-500/10"
         },
         {
-            icon: BarChart3,
-            title: t('features.intel'),
-            desc: t('features.intelDesc'),
+            icon: Activity,
+            title: t('features.tracking'),
+            desc: t('features.trackingDesc'),
             color: "text-lime-500",
             bg: "bg-lime-500/10"
         },
     ];
 
     const stats = [
-        { label: t('stats.links'), val: "50M+" },
-        { label: t('stats.traffic'), val: "500M+" },
-        { label: t('stats.uptime'), val: "99.9%" },
-        { label: t('stats.rating'), val: "4.9/5" },
+        { label: t('stats.s1l'), val: t('stats.s1v') },
+        { label: t('stats.s2l'), val: t('stats.s2v') },
+        { label: t('stats.s3l'), val: t('stats.s3v') },
+        { label: t('stats.s4l'), val: t('stats.s4v') },
     ];
 
     const demos = [
         {
-            id: 'creator',
+            id: 'neon',
             title: 'The Creator',
             subtitle: 'Neon & Energetic',
-            accent: 'blue',
-            color: 'from-blue-600 to-indigo-600',
-            textColor: 'text-blue-400',
-            description: 'Modern, high-contrast design with Space Grotesk typography.',
+            accent: 'cyan',
+            color: 'from-cyan-400 to-blue-600',
+            textColor: 'text-cyan-400',
+            description: 'Cyberpunk aesthetic with glowing borders and sharp contrast.',
             theme: {
-                font: 'font-display',
-                buttonStyle: 'rounded-full border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20',
+                font: 'font-mono',
+                buttonStyle: 'bg-black/80 border border-cyan-400 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)] hover:shadow-[0_0_20px_rgba(34,211,238,0.6)] hover:bg-cyan-950/30 hover:scale-[1.02]',
                 layout: 'stacked'
             },
             preview: {
-                name: 'Kai Zen',
-                bio: 'Streaming daily @ 7PM. Check out my new setup!',
+                name: 'KAI_ZEN',
+                bio: 'cat bio.txt // Streaming daily @ 7PM. Check out my new setup!',
                 avatar: 'https://i.pravatar.cc/150?u=kai',
                 links: [
                     { label: 'Watch Live on Twitch', url: 'https://twitch.tv' },
@@ -86,16 +86,16 @@ const LandingPage = () => {
             }
         },
         {
-            id: 'professional',
+            id: 'glass',
             title: 'The Professional',
-            subtitle: 'Classic & Elegant',
-            accent: 'gold',
-            color: 'from-amber-200 to-amber-500',
-            textColor: 'text-amber-400',
-            description: 'Elite serif typography and sharp architecture for business.',
+            subtitle: 'Modern & Sleek',
+            accent: 'blue',
+            color: 'from-blue-600 to-indigo-600',
+            textColor: 'text-blue-400',
+            description: 'The signature glassmorphism effect for a premium look.',
             theme: {
-                font: 'font-serif',
-                buttonStyle: 'rounded-none border-amber-500/30 bg-white/5 hover:bg-amber-500/10',
+                font: 'font-sans',
+                buttonStyle: 'backdrop-blur-lg bg-white/10 border border-white/20 hover:bg-white/20 hover:scale-[1.02] active:scale-[0.98]',
                 layout: 'stacked'
             },
             preview: {
@@ -116,15 +116,15 @@ const LandingPage = () => {
             accent: 'zinc',
             color: 'from-zinc-100 to-zinc-400',
             textColor: 'text-zinc-400',
-            description: 'Subtle glassmorphism and plenty of whitespace.',
+            description: 'A clean, distraction-free layout focused on legibility.',
             theme: {
-                font: 'font-sans',
-                buttonStyle: 'rounded-2xl border-white/5 bg-white/[0.03] hover:bg-white/10',
+                font: 'font-serif',
+                buttonStyle: 'bg-white border border-gray-200 text-gray-800 hover:border-black hover:bg-gray-50 transition-colors',
                 layout: 'stacked'
             },
             preview: {
                 name: 'Arlo White',
-                bio: 'Less is more. Curating essential links.',
+                bio: 'Curating essential links for the mindful collector.',
                 avatar: 'https://i.pravatar.cc/150?u=arlo',
                 links: [
                     { label: 'Weekly Newsletter', url: 'https://substack.com' },
@@ -133,26 +133,26 @@ const LandingPage = () => {
             }
         },
         {
-            id: 'terminal',
-            title: 'The Dev',
-            subtitle: 'Monospace Layout',
-            accent: 'lime',
-            color: 'from-lime-400 to-green-500',
-            textColor: 'text-lime-400',
-            description: 'Coding aesthetic with JetBrains Mono and grid patterns.',
+            id: 'brutalism',
+            title: 'The Trendsetter',
+            subtitle: 'Brutal & Bold',
+            accent: 'yellow',
+            color: 'from-yellow-400 to-orange-500',
+            textColor: 'text-yellow-400',
+            description: 'Daring design with heavy borders and high-energy colors.',
             theme: {
-                font: 'font-mono',
-                buttonStyle: 'rounded-lg border-lime-500/20 bg-lime-500/5 hover:bg-lime-500/15',
-                layout: 'grid'
+                font: 'font-display',
+                buttonStyle: 'bg-[#ffbc00] text-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none',
+                layout: 'stacked'
             },
             preview: {
-                name: 'ROOT_ACCESS',
-                bio: 'cat bio.txt // Full-stack engineer & Open source enthusiast.',
-                avatar: 'https://i.pravatar.cc/150?u=root',
+                name: 'MAX VOLUME',
+                bio: 'Breaking boundaries. Defining the new standard.',
+                avatar: 'https://i.pravatar.cc/150?u=max',
                 links: [
-                    { label: 'GitHub Profile', url: 'https://github.com' },
-                    { label: 'NPM Packages', url: 'https://npmjs.com' },
-                    { label: 'Technical Blog', url: 'https://dev.to' }
+                    { label: 'Latest Drop', url: 'https://drop.com' },
+                    { label: 'Tour Dates', url: 'https://tour.com' },
+                    { label: 'Merch Store', url: 'https://shop.com' }
                 ]
             }
         }
@@ -273,10 +273,10 @@ const LandingPage = () => {
                                                 href={typeof link === 'string' ? '#' : link.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className={`w-full py-3.5 px-4 border text-[10px] font-black text-center tracking-widest uppercase flex items-center justify-between transition-all group/link ${d.theme.buttonStyle}`}
+                                                className={`w-full py-4 px-4 text-[11px] font-bold text-center flex items-center justify-center transition-all group/link relative ${d.theme.buttonStyle}`}
                                             >
                                                 <span>{typeof link === 'string' ? link : link.label}</span>
-                                                <ArrowRight size={12} className="opacity-40 group-hover/link:opacity-100 transition-opacity" />
+                                                {d.id !== 'brutalism' && <ArrowRight size={12} className="absolute right-4 opacity-40 group-hover/link:opacity-100 transition-opacity" />}
                                             </a>
                                         ))}
                                     </div>
@@ -358,8 +358,8 @@ const LandingPage = () => {
 
                         <div className="grid grid-cols-2 gap-6 md:gap-10">
                             {stats.map((s, i) => (
-                                <div key={i} className="glass-effect p-8 md:p-12 rounded-[40px] border-white/5 hover:border-blue-500/20 transition-all group">
-                                    <p className="text-5xl md:text-7xl font-black font-heading text-white tracking-tighter mb-4 group-hover:scale-105 transition-transform duration-500 italic uppercase">{s.val}</p>
+                                <div key={i} className="glass-effect p-8 md:p-12 rounded-[40px] border-white/5 hover:border-blue-500/20 transition-all group overflow-hidden">
+                                    <p className="text-3xl md:text-4xl font-black font-heading text-white tracking-tighter mb-4 group-hover:scale-105 transition-transform duration-500 italic uppercase truncate">{s.val}</p>
                                     <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-gray-600">{s.label}</p>
                                 </div>
                             ))}

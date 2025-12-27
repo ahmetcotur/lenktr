@@ -21,7 +21,11 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { createClient } from '../utils/supabase/client';
+import { useAuth } from '../context/AuthContext';
+
+const supabase = createClient();
 
 // Sortable Link Item Component
 const SortableLinkItem = ({ link, updateLink, toggleLinkVisibility, deleteLink }) => {
@@ -148,8 +152,11 @@ const fonts = [
 
 const BioLinkEditor = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const pageId = searchParams.get('id');
     const avatarInputRef = useRef(null);
     const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
+    const [slug, setSlug] = useState('');
 
     useEffect(() => {
         const link = document.createElement('link');
@@ -197,6 +204,117 @@ const BioLinkEditor = () => {
         { id: 'github', name: 'GitHub', url: '', active: false },
         { id: 'discord', name: 'Discord', url: '', active: false }
     ]);
+
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [bioPageId, setBioPageId] = useState(null);
+
+    useEffect(() => {
+        const fetchBioPage = async () => {
+            if (!user) return;
+
+            // If no ID passed and we are not explicitly creating new, 
+            // maybe we shouldn't fetch anything (start fresh).
+            if (!pageId) {
+                setLoading(false);
+                setSlug(user.email.split('@')[0] + '-' + Math.random().toString(36).substring(2, 5));
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('bio_pages')
+                    .select('*')
+                    .eq('id', pageId)
+                    .single();
+
+                if (error) throw error;
+
+                if (data) {
+                    setBioPageId(data.id);
+                    setSlug(data.slug || '');
+                    setProfile({
+                        displayName: data.profile_title || '',
+                        bio: data.profile_bio || '',
+                        avatar: data.theme_settings?.avatar || 'https://i.pravatar.cc/150?u=default',
+                        backgroundImage: data.theme_settings?.backgroundImage || '',
+                        font: data.theme_settings?.font || 'sans-serif',
+                        customColors: data.theme_settings?.customColors || { color1: '#2563eb', color2: '#9333ea' },
+                        backgroundBlur: data.theme_settings?.backgroundBlur ?? 20,
+                        backgroundOpacity: data.theme_settings?.backgroundOpacity ?? 40,
+                        theme: data.theme_settings?.theme || 'modern',
+                        template: data.theme_settings?.template || 'glassmorphism',
+                        uiStyle: data.theme_settings?.uiStyle || 'glassmorphism',
+                        scheduleDate: data.theme_settings?.scheduleDate || null,
+                        expirationDate: data.theme_settings?.expirationDate || null,
+                        pixels: data.theme_settings?.pixels || [],
+                        cookieConsent: data.theme_settings?.cookieConsent || false,
+                        adultWarning: data.theme_settings?.adultWarning || false,
+                        verifiedIcon: data.theme_settings?.verifiedIcon || false,
+                        shareButton: data.theme_settings?.shareButton ?? true
+                    });
+                    if (data.theme_settings?.bioLinks) setLinks(data.theme_settings.bioLinks);
+                    if (data.theme_settings?.socialMedia) setSocialMedia(data.theme_settings.socialMedia);
+                }
+            } catch (err) {
+                console.error('Error fetching bio page:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBioPage();
+    }, [user, pageId]);
+
+    const handleSave = async () => {
+        if (!user) return;
+        if (!slug) {
+            alert('Please enter a slug for your page');
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const payload = {
+                user_id: user.id,
+                slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+                profile_title: profile.displayName,
+                profile_bio: profile.bio,
+                theme_settings: {
+                    ...profile,
+                    bioLinks: links,
+                    socialMedia: socialMedia
+                },
+                is_published: true
+            };
+
+            if (bioPageId) {
+                const { error: updateError } = await supabase
+                    .from('bio_pages')
+                    .update(payload)
+                    .eq('id', bioPageId);
+
+                if (updateError) throw updateError;
+            } else {
+                const { data: newData, error: insertError } = await supabase
+                    .from('bio_pages')
+                    .insert([payload])
+                    .select()
+                    .single();
+
+                if (insertError) throw insertError;
+                if (newData) setBioPageId(newData.id);
+            }
+
+            alert('Bio page saved successfully!');
+        } catch (err) {
+            alert('Error saving bio page: ' + err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -320,14 +438,23 @@ const BioLinkEditor = () => {
         }
     };
 
-    const handleAvatarUpload = (e) => {
+    const handleAvatarUpload = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setProfile({ ...profile, avatar: e.target.result });
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        try {
+            const { uploadImage } = await import('../utils/supabase/storage');
+            const { url, error } = await uploadImage(file, 'avatars', user.id);
+
+            if (error) {
+                alert('Failed to upload avatar. Please try again.');
+                return;
+            }
+
+            setProfile({ ...profile, avatar: url });
+        } catch (error) {
+            console.error('Avatar upload error:', error);
+            alert('Failed to upload avatar. Please try again.');
         }
     };
 
@@ -387,7 +514,7 @@ const BioLinkEditor = () => {
                                     className="hidden"
                                 />
                             </div>
-                            <div className="flex-1 space-y-2">
+                            <div className="flex-1 space-y-3">
                                 <input
                                     type="text"
                                     value={profile.displayName}
@@ -395,6 +522,16 @@ const BioLinkEditor = () => {
                                     className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:border-blue-500/50 outline-none transition-all placeholder:text-zinc-600"
                                     placeholder="Display Name"
                                 />
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-zinc-500 font-mono">lenk.tr/</span>
+                                    <input
+                                        type="text"
+                                        value={slug}
+                                        onChange={(e) => setSlug(e.target.value)}
+                                        className="flex-1 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-blue-400 font-bold focus:border-blue-500/50 outline-none transition-all placeholder:text-zinc-600 font-mono"
+                                        placeholder="your-slug"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -688,6 +825,7 @@ const BioLinkEditor = () => {
                                 label="Background Image"
                                 value={profile.backgroundImage}
                                 onChange={(val) => setProfile({ ...profile, backgroundImage: val })}
+                                bucket="bio-images"
                             />
 
                             {profile.backgroundImage && (
@@ -736,8 +874,16 @@ const BioLinkEditor = () => {
 
                 {/* Footer Actions */}
                 <div className="p-6 border-t border-white/5 bg-[#0D0F14]">
-                    <Button variant="primary" size="lg" className="w-full" glow>
-                        <Save size={18} className="mr-2" /> Save Changes
+                    <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full"
+                        glow
+                        onClick={handleSave}
+                        disabled={saving}
+                    >
+                        {saving ? <Activity size={18} className="mr-2 animate-spin" /> : <Save size={18} className="mr-2" />}
+                        {saving ? 'Saving...' : 'Save Changes'}
                     </Button>
                 </div>
             </div>

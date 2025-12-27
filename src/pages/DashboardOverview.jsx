@@ -1,59 +1,65 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    BarChart3,
     Link2,
     MousePointer2,
     Eye,
-    TrendingUp,
-    ExternalLink,
     Plus,
-    ArrowUpRight,
-    Globe,
-    Zap,
-    Cpu,
-    Activity,
-    Shield,
+    ExternalLink,
+    UserCircle,
     Loader2,
-    Target
+    TrendingUp
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { createClient } from '../utils/supabase/client';
+import { useAuth } from '../context/AuthContext';
 
 const supabase = createClient();
 
 const DashboardOverview = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [statsData, setStatsData] = useState({
+    const [dashboardData, setDashboardData] = useState({
         totalClicks: 0,
+        totalViews: 0,
         activeLinks: 0,
-        topLinks: [],
-        chartData: [0, 0, 0, 0, 0, 0, 0]
+        activeBioPages: 0,
+        recentLinks: [],
+        recentBioPages: []
     });
 
     useEffect(() => {
         const fetchDashboardData = async () => {
+            if (!user) return;
             setLoading(true);
             try {
-                // 1. Fetch all links for stats
-                const { data: links, error: linksError } = await supabase
-                    .from('links')
-                    .select('*');
+                // Fetch links and bio pages
+                const [linksRes, bioRes] = await Promise.all([
+                    supabase.from('links').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+                    supabase.from('bio_pages').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5)
+                ]);
 
-                if (linksError) throw linksError;
+                if (linksRes.error) throw linksRes.error;
+                if (bioRes.error) throw bioRes.error;
 
-                const totalClicks = links.reduce((acc, curr) => acc + (curr.clicks || 0), 0);
+                const links = linksRes.data || [];
+                const bioPages = bioRes.data || [];
+
+                const totalClicks = links.reduce((acc, l) => acc + (l.clicks || 0), 0);
+                const totalViews = bioPages.reduce((acc, p) => acc + (p.views || 0), 0);
                 const activeLinks = links.filter(l => !l.is_archived).length;
-                const sortedLinks = [...links].sort((a, b) => (b.clicks || 0) - (a.clicks || 0)).slice(0, 3);
+                const activeBioPages = bioPages.filter(p => p.is_published).length;
 
-                setStatsData({
+                setDashboardData({
                     totalClicks,
+                    totalViews,
                     activeLinks,
-                    topLinks: sortedLinks,
-                    chartData: [45, 62, 55, 80, 70, 95, 88] // Keep mock chart for now until we have traffic table
+                    activeBioPages,
+                    recentLinks: links.slice(0, 3),
+                    recentBioPages: bioPages.slice(0, 3)
                 });
             } catch (err) {
                 console.error('Error fetching dashboard data:', err);
@@ -63,143 +69,192 @@ const DashboardOverview = () => {
         };
 
         fetchDashboardData();
-    }, []);
+    }, [user]);
 
-    const stats = [
-        { label: "Total Clicks", value: statsData.totalClicks.toLocaleString(), trend: "+12.5%", icon: Activity, color: "text-blue-500", glow: "blue" },
-        { label: "Active Nodes", value: statsData.activeLinks, trend: "Stable", icon: Target, color: "text-blue-400", glow: "blue" },
-        { label: "Success Rate", value: "99.9%", trend: "0.0%", icon: Zap, color: "text-blue-300", glow: "blue" },
-        { label: "Uptime", value: "24/7", trend: "Steady", icon: Cpu, color: "text-blue-600", glow: "blue" },
-    ];
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center space-y-4">
+                    <Loader2 size={40} className="animate-spin text-blue-500 mx-auto" />
+                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Loading Dashboard...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-12 md:space-y-20 animate-fade-in py-2">
-            {/* Header: Overview */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 md:gap-12 border-b border-white/5 pb-10 md:pb-16 text-center md:text-left">
-                <div className="max-w-3xl">
-                    <Badge variant="primary" className="mb-6 md:mb-8 font-black uppercase tracking-[0.3em]">System Status: Active</Badge>
-                    <h1 className="text-5xl md:text-8xl font-black tracking-tighter font-heading text-white leading-none mb-4 md:mb-6 italic uppercase">Statistics</h1>
-                    <p className="text-xl md:text-2xl text-gray-500 font-bold max-w-lg leading-relaxed mx-auto md:mx-0">Real-time analytics for your shortened links.</p>
+        <div className="space-y-8 animate-fade-in">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/5">
+                <div>
+                    <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-2">Dashboard</h1>
+                    <p className="text-zinc-500 font-medium">Welcome back! Here's your overview.</p>
                 </div>
-                <Button variant="primary" size="lg" className="px-10 md:px-12 py-5 md:py-7 text-lg md:text-xl shadow-[0_0_40px_-12px_rgba(59,130,246,0.5)] w-full md:w-auto">
-                    <Plus size={24} className="mr-4" /> Create Link
-                </Button>
+                <div className="flex gap-3">
+                    <Button variant="secondary" size="md" onClick={() => navigate('/links')}>
+                        <Link2 size={16} className="mr-2" /> Manage Links
+                    </Button>
+                    <Button variant="primary" size="md" glow onClick={() => navigate('/bio')}>
+                        <UserCircle size={16} className="mr-2" /> Bio Pages
+                    </Button>
+                </div>
             </div>
 
-            {/* Core Telemetry Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-                {stats.map((stat, i) => (
-                    <Card key={i} className="group relative overflow-hidden flex flex-col justify-between py-8 md:py-10 px-8 md:px-10 border-white/5 hover:border-blue-500/20 transition-all duration-700">
-                        <div className="flex items-center justify-between mb-8 md:mb-10">
-                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-blue-600/10 flex items-center justify-center ${stat.color} transition-all duration-700 group-hover:scale-110 group-hover:bg-blue-600/20 border border-blue-500/10`}>
-                                <stat.icon size={28} className="fill-current/10" />
-                            </div>
-                            <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full bg-white/5 ${stat.trend.includes('+') ? 'text-blue-400' : 'text-gray-600'}`}>
-                                {stat.trend}
-                            </span>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="p-6 hover:border-blue-500/30 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                            <MousePointer2 size={24} />
                         </div>
-                        <div>
-                            <p className="text-[10px] md:text-[11px] font-black text-gray-600 uppercase tracking-[0.3em] mb-2 md:mb-3">{stat.label}</p>
-                            <h3 className="text-3xl md:text-4xl font-black font-heading tracking-tighter text-white italic">{stat.value}</h3>
-                        </div>
-                        {/* Visual Pulse Flare */}
-                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-600/5 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-                    </Card>
-                ))}
-            </div>
+                        <Badge variant="success" className="text-xs">
+                            <TrendingUp size={12} className="mr-1" /> Live
+                        </Badge>
+                    </div>
+                    <h3 className="text-3xl font-black text-white mb-1">{dashboardData.totalClicks.toLocaleString()}</h3>
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Total Clicks</p>
+                </Card>
 
-            {/* Main Visual Processing Layer */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
-                <Card className="lg:col-span-2 p-8 md:p-12 border-white/5 ring-1 ring-white/5">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12 md:mb-16">
-                        <div>
-                            <h3 className="text-2xl md:text-3xl font-black font-heading tracking-tighter italic uppercase text-white mb-2">Traffic Activity</h3>
-                            <p className="text-base md:text-lg text-gray-500 font-bold">Your link traffic over the last 7 days.</p>
+                <Card className="p-6 hover:border-purple-500/30 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
+                            <Eye size={24} />
                         </div>
-                        <div className="flex items-center gap-2 bg-[#08090D] border border-white/5 rounded-2xl p-1.5 h-12 md:h-14 w-fit">
-                            <button className="px-5 md:px-6 h-full text-[10px] font-black uppercase tracking-[0.25em] rounded-xl bg-blue-600 text-white shadow-2xl shadow-blue-600/30">Clicks</button>
-                            <button className="px-5 md:px-6 h-full text-[10px] font-black uppercase tracking-[0.25em] rounded-xl text-gray-600 hover:text-white transition-all">Pages</button>
+                        <Badge variant="success" className="text-xs">
+                            <TrendingUp size={12} className="mr-1" /> Live
+                        </Badge>
+                    </div>
+                    <h3 className="text-3xl font-black text-white mb-1">{dashboardData.totalViews.toLocaleString()}</h3>
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Bio Page Views</p>
+                </Card>
+
+                <Card className="p-6 hover:border-lime-500/30 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 rounded-xl bg-lime-500/10 flex items-center justify-center text-lime-500">
+                            <Link2 size={24} />
                         </div>
                     </div>
+                    <h3 className="text-3xl font-black text-white mb-1">{dashboardData.activeLinks}</h3>
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Active Links</p>
+                </Card>
 
-                    <div className="h-[300px] md:h-[400px] flex items-end justify-between gap-3 md:gap-6 px-2 md:px-4 relative">
-                        {/* System Grid Lines */}
-                        <div className="absolute inset-0 flex flex-col justify-between opacity-10">
-                            {[...Array(6)].map((_, i) => <div key={i} className="w-full border-t border-blue-500/20"></div>)}
+                <Card className="p-6 hover:border-orange-500/30 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+                            <UserCircle size={24} />
                         </div>
+                    </div>
+                    <h3 className="text-3xl font-black text-white mb-1">{dashboardData.activeBioPages}</h3>
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Active Bio Pages</p>
+                </Card>
+            </div>
 
-                        {[45, 62, 55, 80, 70, 95, 88].map((h, i) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-4 md:gap-8 group relative z-10">
-                                <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
-                                    <div className="px-3 md:px-4 py-1.5 md:py-2 glass-effect rounded-xl border-blue-500/30 text-blue-500 font-black text-xs md:text-sm tracking-widest">{h}K</div>
-                                </div>
-                                <div
-                                    className="w-full bg-blue-600/5 rounded-xl md:rounded-2xl relative transition-all duration-700 group-hover:bg-blue-600/20 overflow-hidden border border-white/5"
-                                    style={{ height: `${h}%` }}
-                                >
-                                    <div className="absolute inset-x-0 top-0 h-1.5 md:h-2 bg-blue-600 shadow-[0_0_30px_rgba(59,130,246,0.8)] animate-pulse"></div>
-                                </div>
-                                <span className="text-[9px] md:text-[11px] font-black text-gray-700 uppercase tracking-[0.2em] md:tracking-[0.3em] group-hover:text-blue-500 transition-all duration-500">Day-{(i + 1).toString().padStart(2, '0')}</span>
+            {/* Recent Items Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Recent Links */}
+                <Card className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-black text-white flex items-center gap-2">
+                            <Link2 size={20} className="text-blue-500" /> Recent Links
+                        </h2>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/links')}>
+                            View All
+                        </Button>
+                    </div>
+                    <div className="space-y-3">
+                        {dashboardData.recentLinks.length === 0 ? (
+                            <div className="text-center py-8 text-zinc-600">
+                                <Link2 size={32} className="mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">No links yet</p>
+                                <Button variant="primary" size="sm" className="mt-4" onClick={() => navigate('/links')}>
+                                    <Plus size={14} className="mr-2" /> Create Link
+                                </Button>
                             </div>
-                        ))}
+                        ) : (
+                            dashboardData.recentLinks.map(link => (
+                                <div key={link.id} className="p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-all border border-white/5 hover:border-blue-500/30">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-sm font-bold text-white truncate">{link.title || link.short_slug}</h3>
+                                            <p className="text-xs text-zinc-500 truncate font-mono">lenk.tr/{link.short_slug}</p>
+                                        </div>
+                                        <div className="flex items-center gap-4 ml-4">
+                                            <div className="text-right">
+                                                <div className="text-lg font-black text-white">{link.clicks || 0}</div>
+                                                <div className="text-[10px] text-zinc-600 uppercase font-bold">Clicks</div>
+                                            </div>
+                                            <a href={`https://lenk.tr/${link.short_slug}`} target="_blank" rel="noopener noreferrer" className="text-zinc-600 hover:text-blue-500 transition-colors">
+                                                <ExternalLink size={16} />
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </Card>
 
-                <Card className="p-8 md:p-12 border-white/5 flex flex-col ring-1 ring-white/5">
-                    <div className="flex items-start justify-between mb-10 md:mb-12">
-                        <div>
-                            <h3 className="text-2xl md:text-3xl font-black font-heading tracking-tighter italic uppercase text-white mb-2">Top Links</h3>
-                            <p className="text-base md:text-lg text-gray-500 font-bold">Your most clicked links.</p>
-                        </div>
-                        <div className="p-2.5 md:p-3 bg-blue-600/10 rounded-2xl border border-blue-500/20 text-blue-500">
-                            <TrendingUp size={24} />
-                        </div>
+                {/* Recent Bio Pages */}
+                <Card className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-black text-white flex items-center gap-2">
+                            <UserCircle size={20} className="text-purple-500" /> Recent Bio Pages
+                        </h2>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/bio')}>
+                            View All
+                        </Button>
                     </div>
-
-                    <div className="space-y-8 md:space-y-10 flex-1">
-                        {statsData.topLinks.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-zinc-600 font-bold uppercase tracking-widest text-[10px]">
-                                No link activity detected
+                    <div className="space-y-3">
+                        {dashboardData.recentBioPages.length === 0 ? (
+                            <div className="text-center py-8 text-zinc-600">
+                                <UserCircle size={32} className="mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">No bio pages yet</p>
+                                <Button variant="primary" size="sm" className="mt-4" onClick={() => navigate('/bio/editor')}>
+                                    <Plus size={14} className="mr-2" /> Create Bio Page
+                                </Button>
                             </div>
-                        ) : statsData.topLinks.map((link, i) => (
-                            <div key={link.id || i} className="group cursor-pointer">
-                                <div className="flex items-start justify-between mb-4 md:mb-6">
-                                    <div className="flex flex-col gap-1 md:gap-2">
-                                        <span className="text-base md:text-lg font-black text-white group-hover:text-blue-500 transition-all duration-500 flex items-center gap-2 md:gap-3 tracking-tighter uppercase italic">
-                                            {link.title || 'Untitled'} <ArrowUpRight size={18} className="text-gray-800 group-hover:text-blue-500 transition-all duration-500" />
-                                        </span>
-                                        <span className="text-xs md:text-sm font-bold text-gray-600 tracking-tight">lenk.tr/{link.short_slug}</span>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="block text-lg md:text-xl font-black text-white italic tracking-tighter leading-none mb-1">{(link.clicks || 0).toLocaleString()}</span>
-                                        <span className="text-[9px] md:text-[10px] font-black uppercase text-gray-700 tracking-[0.2em]">CLICKS</span>
+                        ) : (
+                            dashboardData.recentBioPages.map(page => (
+                                <div key={page.id} className="p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-all border border-white/5 hover:border-purple-500/30">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-sm font-bold text-white truncate">{page.profile_title || 'Untitled'}</h3>
+                                            <p className="text-xs text-zinc-500 truncate font-mono">lenk.tr/{page.slug}</p>
+                                        </div>
+                                        <div className="flex items-center gap-4 ml-4">
+                                            <div className="text-right">
+                                                <div className="text-lg font-black text-white">{page.views || 0}</div>
+                                                <div className="text-[10px] text-zinc-600 uppercase font-bold">Views</div>
+                                            </div>
+                                            <a href={`/${page.slug}`} target="_blank" rel="noopener noreferrer" className="text-zinc-600 hover:text-purple-500 transition-colors">
+                                                <ExternalLink size={16} />
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                                    <div className="h-full bg-blue-600 shadow-[0_0_15px_rgba(59,130,246,1)] transition-all duration-1500 ease-in-out" style={{ width: `${Math.min(((link.clicks || 0) / (statsData.topLinks[0]?.clicks || 1)) * 100, 100)}%` }}></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div
-                        onClick={() => navigate('/upgrade')}
-                        className="mt-12 md:mt-16 p-6 md:p-8 rounded-[32px] bg-blue-600 text-white shadow-2xl shadow-blue-600/30 group cursor-pointer hover:bg-blue-500 transition-all duration-500 relative overflow-hidden"
-                    >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                        <div className="flex items-center gap-4 md:gap-6 relative z-10">
-                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white backdrop-blur-md border border-white/10">
-                                <Shield size={24} className="fill-current" />
-                            </div>
-                            <div className="flex-1">
-                                <h4 className="text-lg md:text-xl font-black italic tracking-tighter uppercase">Pro Plan</h4>
-                                <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] opacity-80">Unlock advanced features</p>
-                            </div>
-                            <ArrowUpRight size={24} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                        </div>
+                            ))
+                        )}
                     </div>
                 </Card>
             </div>
+
+            {/* Quick Actions */}
+            <Card className="p-8 bg-gradient-to-br from-blue-600/10 to-purple-600/10 border-blue-500/20">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                        <h2 className="text-2xl font-black text-white mb-2">Ready to grow?</h2>
+                        <p className="text-zinc-400">Create new links or bio pages to expand your presence.</p>
+                    </div>
+                    <div className="flex gap-3">
+                        <Button variant="secondary" size="lg" onClick={() => navigate('/links')}>
+                            <Plus size={18} className="mr-2" /> New Link
+                        </Button>
+                        <Button variant="primary" size="lg" glow onClick={() => navigate('/bio/editor')}>
+                            <Plus size={18} className="mr-2" /> New Bio Page
+                        </Button>
+                    </div>
+                </div>
+            </Card>
         </div>
     );
 };

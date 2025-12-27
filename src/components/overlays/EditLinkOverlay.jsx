@@ -20,6 +20,15 @@ const EditLinkOverlay = ({ link, onClose }) => {
         destinationUrl: link?.original_url || '',
         title: link?.title || '',
         shortSlug: link?.short_slug || Math.random().toString(36).substring(2, 8),
+        cloaking: false,
+        showCtaBanner: false,
+        ctaBanner: {
+            logo: '',
+            title: '',
+            description: '',
+            buttonText: 'Learn More',
+            buttonUrl: ''
+        }
     });
 
     const handleSave = async () => {
@@ -65,7 +74,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
     const [activeTab, setActiveTab] = useState('default');
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
             <div className="relative w-full max-w-2xl bg-[#0D0F14] rounded-2xl border border-white/10 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in-up">
 
