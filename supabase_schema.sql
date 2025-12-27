@@ -1,82 +1,171 @@
--- Create Profiles Table
-create table public.profiles (
-  id uuid references auth.users on delete cascade not null primary key,
-  full_name text,
-  role text default 'Operator',
-  avatar_url text,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- Complete Database Setup Script for LENK.TR
+-- This script will create all tables, indexes, policies, and storage buckets
+-- Run this in Supabase SQL Editor for a fresh installation
+
+-- ============================================================================
+-- STEP 1: DROP EXISTING TABLES (if you want to start fresh)
+-- ============================================================================
+-- Uncomment the following lines if you want to drop existing tables
+-- WARNING: This will delete all data!
+
+-- DROP TABLE IF EXISTS public.traffic_logs CASCADE;
+-- DROP TABLE IF EXISTS public.notifications CASCADE;
+-- DROP TABLE IF EXISTS public.bio_pages CASCADE;
+-- DROP TABLE IF EXISTS public.links CASCADE;
+-- DROP TABLE IF EXISTS public.profiles CASCADE;
+
+-- ============================================================================
+-- STEP 2: CREATE TABLES
+-- ============================================================================
+
+-- Profiles Table
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
+  full_name TEXT,
+  role TEXT DEFAULT 'Operator',
+  avatar_url TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Create Links Table
-create table public.links (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references public.profiles(id) on delete cascade not null,
-  original_url text not null,
-  short_slug text unique not null,
-  title text,
-  clicks integer default 0,
-  is_archived boolean default false,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- Links Table
+CREATE TABLE IF NOT EXISTS public.links (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  original_url TEXT NOT NULL,
+  short_slug TEXT UNIQUE NOT NULL,
+  title TEXT,
+  clicks INTEGER DEFAULT 0,
+  is_archived BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Create Bio Pages Table
-create table public.bio_pages (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references public.profiles(id) on delete cascade not null,
-  slug text unique not null,
-  profile_title text,
-  profile_bio text,
-  theme_settings jsonb default '{}'::jsonb,
-  is_published boolean default true,
-  views integer default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- Bio Pages Table
+CREATE TABLE IF NOT EXISTS public.bio_pages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  profile_title TEXT,
+  profile_bio TEXT,
+  theme_settings JSONB DEFAULT '{}'::jsonb,
+  is_published BOOLEAN DEFAULT TRUE,
+  views INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Create Notifications Table
-create table public.notifications (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references public.profiles(id) on delete cascade not null,
-  type text check (type in ('click', 'system', 'alert')),
-  content text not null,
-  is_read boolean default false,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- Notifications Table
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  type TEXT CHECK (type IN ('click', 'system', 'alert')),
+  content TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Create Traffic Logs Table
-create table public.traffic_logs (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references public.profiles(id) on delete cascade not null,
-  link_id uuid references public.links(id) on delete cascade,
-  bio_page_id uuid references public.bio_pages(id) on delete cascade,
-  type text check (type in ('link', 'bio')),
-  referrer text,
-  country text default 'TR',
-  device text,
-  browser text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- Traffic Logs Table
+CREATE TABLE IF NOT EXISTS public.traffic_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  link_id UUID REFERENCES public.links(id) ON DELETE CASCADE,
+  bio_page_id UUID REFERENCES public.bio_pages(id) ON DELETE CASCADE,
+  type TEXT CHECK (type IN ('link', 'bio')),
+  referrer TEXT,
+  country TEXT DEFAULT 'TR',
+  device TEXT,
+  browser TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
-alter table public.profiles enable row level security;
-alter table public.links enable row level security;
-alter table public.bio_pages enable row level security;
-alter table public.notifications enable row level security;
-alter table public.traffic_logs enable row level security;
+-- ============================================================================
+-- STEP 3: CREATE INDEXES FOR PERFORMANCE
+-- ============================================================================
 
--- Policies
-create policy "Users can view own profile" on public.profiles for select using (auth.uid() = id);
-create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
+-- Bio Pages Indexes
+CREATE INDEX IF NOT EXISTS idx_bio_pages_user_id ON public.bio_pages(user_id);
+CREATE INDEX IF NOT EXISTS idx_bio_pages_slug ON public.bio_pages(slug);
+CREATE INDEX IF NOT EXISTS idx_bio_pages_is_published ON public.bio_pages(is_published);
+CREATE INDEX IF NOT EXISTS idx_bio_pages_created_at ON public.bio_pages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_bio_pages_user_published ON public.bio_pages(user_id, is_published);
 
-create policy "Users can CRUD own links" on public.links for all using (auth.uid() = user_id);
-create policy "Public can view links for redirect" on public.links for select using (true);
-create policy "Public can update clicks" on public.links for update using (true) with check (true);
+-- Links Indexes
+CREATE INDEX IF NOT EXISTS idx_links_user_id ON public.links(user_id);
+CREATE INDEX IF NOT EXISTS idx_links_short_slug ON public.links(short_slug);
+CREATE INDEX IF NOT EXISTS idx_links_is_archived ON public.links(is_archived);
+CREATE INDEX IF NOT EXISTS idx_links_created_at ON public.links(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_links_user_archived ON public.links(user_id, is_archived);
 
-create policy "Users can CRUD own bio pages" on public.bio_pages for all using (auth.uid() = user_id);
-create policy "Public can view bio pages" on public.bio_pages for select using (true);
-create policy "Public can update bio page views" on public.bio_pages for update using (true) with check (true);
+-- Profiles Index
+CREATE INDEX IF NOT EXISTS idx_profiles_id ON public.profiles(id);
 
-create policy "Users can view own notifications" on public.notifications for select using (auth.uid() = user_id);
-create policy "Users can update own notifications" on public.notifications for update using (auth.uid() = user_id);
+-- Traffic Logs Indexes
+CREATE INDEX IF NOT EXISTS idx_traffic_logs_user_id ON public.traffic_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_traffic_logs_created_at ON public.traffic_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_traffic_logs_link_id ON public.traffic_logs(link_id);
+CREATE INDEX IF NOT EXISTS idx_traffic_logs_bio_page_id ON public.traffic_logs(bio_page_id);
 
-create policy "Users can view own traffic logs" on public.traffic_logs for select using (auth.uid() = user_id);
-create policy "Public can insert traffic logs" on public.traffic_logs for insert with check (true);
+-- ============================================================================
+-- STEP 4: ENABLE ROW LEVEL SECURITY (RLS)
+-- ============================================================================
+
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bio_pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.traffic_logs ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================================
+-- STEP 5: CREATE RLS POLICIES
+-- ============================================================================
+
+-- Profiles Policies
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Links Policies
+DROP POLICY IF EXISTS "Users can CRUD own links" ON public.links;
+DROP POLICY IF EXISTS "Public can view links for redirect" ON public.links;
+DROP POLICY IF EXISTS "Public can update clicks" ON public.links;
+CREATE POLICY "Users can CRUD own links" ON public.links FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Public can view links for redirect" ON public.links FOR SELECT USING (true);
+CREATE POLICY "Public can update clicks" ON public.links FOR UPDATE USING (true) WITH CHECK (true);
+
+-- Bio Pages Policies
+DROP POLICY IF EXISTS "Users can CRUD own bio pages" ON public.bio_pages;
+DROP POLICY IF EXISTS "Public can view bio pages" ON public.bio_pages;
+DROP POLICY IF EXISTS "Public can update bio page views" ON public.bio_pages;
+CREATE POLICY "Users can CRUD own bio pages" ON public.bio_pages FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Public can view bio pages" ON public.bio_pages FOR SELECT USING (true);
+CREATE POLICY "Public can update bio page views" ON public.bio_pages FOR UPDATE USING (true) WITH CHECK (true);
+
+-- Notifications Policies
+DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
+CREATE POLICY "Users can view own notifications" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own notifications" ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
+
+-- Traffic Logs Policies
+DROP POLICY IF EXISTS "Users can view own traffic logs" ON public.traffic_logs;
+DROP POLICY IF EXISTS "Public can insert traffic logs" ON public.traffic_logs;
+CREATE POLICY "Users can view own traffic logs" ON public.traffic_logs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Public can insert traffic logs" ON public.traffic_logs FOR INSERT WITH CHECK (true);
+
+-- ============================================================================
+-- STEP 6: ANALYZE TABLES
+-- ============================================================================
+
+ANALYZE public.profiles;
+ANALYZE public.links;
+ANALYZE public.bio_pages;
+ANALYZE public.notifications;
+ANALYZE public.traffic_logs;
+
+-- ============================================================================
+-- DONE!
+-- ============================================================================
+
+-- Next steps:
+-- 1. Run supabase_storage.sql to create storage buckets
+-- 2. Run mock_data.sql to add sample data (optional)
+-- 3. Test the application!
