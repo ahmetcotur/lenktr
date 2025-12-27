@@ -189,20 +189,23 @@ const BioLinkEditor = () => {
     });
 
     const [links, setLinks] = useState([
-        { id: 1, title: 'Portfolio', url: 'https://portfolio.com', icon: '🎨', visible: true },
-        { id: 2, title: 'GitHub', url: 'https://github.com', icon: '💻', visible: true },
-        { id: 3, title: 'Twitter', url: 'https://twitter.com', icon: '🐦', visible: true }
+        { id: 1, title: 'Portfolio', url: 'https://portfolio.com', icon: '🎨', isActive: true },
+        { id: 2, title: 'GitHub', url: 'https://github.com', icon: '💻', isActive: true },
+        { id: 3, title: 'Twitter', url: 'https://twitter.com', icon: '🐦', isActive: true }
     ]);
 
     const [socialMedia, setSocialMedia] = useState([
-        { id: 'twitter', name: 'Twitter', url: '', active: false },
-        { id: 'instagram', name: 'Instagram', url: '', active: false },
-        { id: 'facebook', name: 'Facebook', url: '', active: false },
-        { id: 'linkedin', name: 'LinkedIn', url: '', active: false },
-        { id: 'youtube', name: 'YouTube', url: '', active: false },
-        { id: 'tiktok', name: 'TikTok', url: '', active: false },
-        { id: 'github', name: 'GitHub', url: '', active: false },
-        { id: 'discord', name: 'Discord', url: '', active: false }
+        { platform: 'twitter', url: '', isActive: false },
+        { platform: 'instagram', url: '', isActive: false },
+        { platform: 'facebook', url: '', isActive: false },
+        { platform: 'linkedin', url: '', isActive: false },
+        { platform: 'youtube', url: '', isActive: false },
+        { platform: 'tiktok', url: '', isActive: false },
+        { platform: 'github', url: '', isActive: false },
+        { platform: 'discord', url: '', isActive: false },
+        { platform: 'website', url: '', isActive: false },
+        { platform: 'email', url: '', isActive: false },
+        { platform: 'telegram', url: '', isActive: false }
     ]);
 
     const { user } = useAuth();
@@ -466,9 +469,9 @@ const BioLinkEditor = () => {
         ));
     };
 
-    const toggleSocialMedia = (id) => {
+    const toggleSocialMedia = (platform) => {
         setSocialMedia(socialMedia.map(social =>
-            social.id === id ? { ...social, active: !social.active } : social
+            social.platform === platform ? { ...social, isActive: !social.isActive } : social
         ));
     };
 
@@ -586,26 +589,28 @@ const BioLinkEditor = () => {
 
                         <div className="grid grid-cols-1 gap-3">
                             {socialMedia.map((social) => (
-                                <div key={social.id} className="space-y-2 bg-white/5 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-lg text-zinc-400">{socialIcons[social.id]}</span>
-                                            <span className="text-xs font-bold text-zinc-300 capitalize">{social.name}</span>
-                                        </div>
-                                        <button
-                                            onClick={() => toggleSocialMedia(social.id)}
-                                            className={`w-9 h-5 rounded-full transition-colors relative ${social.active ? 'bg-blue-500' : 'bg-zinc-700'}`}
-                                        >
-                                            <div className={`w-3 h-3 rounded-full bg-white absolute top-1 transition-all shadow-sm ${social.active ? 'left-5' : 'left-1'}`}></div>
-                                        </button>
+                                <div key={social.platform} className="flex items-center gap-4 mb-4">
+                                    <div className="flex-1 flex items-center gap-3">
+                                        <div className="text-2xl">{socialIcons[social.platform]}</div>
+                                        <span className="text-sm font-medium text-zinc-300 capitalize">{social.platform}</span>
                                     </div>
-                                    {social.active && (
+                                    <button
+                                        onClick={() => toggleSocialMedia(social.platform)}
+                                        className={`w-9 h-5 rounded-full transition-colors relative ${social.isActive ? 'bg-blue-500' : 'bg-zinc-700'}`}
+                                    >
+                                        <div className={`w-3 h-3 rounded-full bg-white absolute top-1 transition-all shadow-sm ${social.isActive ? 'left-5' : 'left-1'}`}></div>
+                                    </button>
+                                    {social.isActive && (
                                         <input
                                             type="text"
                                             value={social.url}
-                                            onChange={(e) => updateSocialMedia(social.id, e.target.value)}
-                                            placeholder={`https://${social.id}.com/username`}
-                                            className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-lg text-xs text-white focus:border-blue-500/50 outline-none font-mono tracking-tight"
+                                            onChange={(e) => {
+                                                setSocialMedia(socialMedia.map(s =>
+                                                    s.platform === social.platform ? { ...s, url: e.target.value } : s
+                                                ));
+                                            }}
+                                            placeholder={`Your ${social.platform} URL`}
+                                            className="flex-1 px-4 py-2.5 bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
                                         />
                                     )}
                                 </div>
