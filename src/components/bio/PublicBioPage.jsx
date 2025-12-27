@@ -33,9 +33,58 @@ const socialIcons = {
 };
 
 const uiStyles = [
+    {
+        id: 'glassmorphism',
+        name: 'Glassmorphism',
+        linkStyle: 'bg-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/20 hover:scale-[1.02] transition-all shadow-xl'
+    },
+    {
+        id: 'elite',
+        name: 'Elite',
+        linkStyle: 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-black shadow-2xl hover:shadow-yellow-500/50 hover:scale-[1.05] hover:brightness-110 transition-all'
+    },
+    {
+        id: 'modern',
+        name: 'Modern',
+        linkStyle: 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-purple-500/50 hover:scale-[1.03] hover:brightness-110'
+    },
+    {
+        id: 'neumorphism',
+        name: 'Neumorphism',
+        linkStyle: 'bg-[#e0e5ec] text-gray-800 shadow-[inset_5px_5px_10px_#d1d1d1,inset_-5px_-5px_10px_#ffffff] hover:shadow-[5px_5px_10px_#d1d1d1,-5px_-5px_10px_#ffffff]'
+    },
+    {
+        id: 'material',
+        name: 'Material',
+        linkStyle: 'bg-white text-gray-800 shadow-md hover:shadow-xl hover:-translate-y-1 active:shadow-sm active:translate-y-0'
+    },
+    {
+        id: 'brutalist',
+        name: 'Brutal',
+        linkStyle: 'bg-[#ffbc00] text-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none'
+    },
+    {
+        id: 'gradient',
+        name: 'Gradient',
+        linkStyle: 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg hover:shadow-indigo-500/50 hover:scale-[1.03] hover:brightness-110'
+    },
+    {
+        id: 'neon',
+        name: 'Neon',
+        linkStyle: 'bg-black/80 border border-cyan-400 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)] hover:shadow-[0_0_20px_rgba(34,211,238,0.6)] hover:bg-cyan-950/30 hover:scale-[1.02]'
+    },
+    {
+        id: 'minimal',
+        name: 'Minimal',
+        linkStyle: 'bg-white border border-gray-200 text-gray-800 hover:border-black hover:bg-gray-50 transition-colors'
+    },
+    {
+        id: 'retro',
+        name: 'Retro',
+        linkStyle: 'bg-[#f0e6d2] text-[#4a3b2a] border-2 border-[#4a3b2a] hover:bg-[#e6d8b9] hover:underline decoration-2 underline-offset-4'
+    },
+    // Legacy styles for backward compatibility
     { id: 'glass', name: 'Glassmorphism', linkStyle: 'bg-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/20' },
-    { id: 'neon', name: 'Cyber Neon', linkStyle: 'bg-transparent border-2 border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' },
-    { id: 'minimal', name: 'Minimal Dark', linkStyle: 'bg-[#121212] border border-white/5 text-white hover:bg-zinc-800' },
     { id: 'brutal', name: 'Neo Brutalist', linkStyle: 'bg-white border-4 border-black text-black font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all' },
     { id: 'soft', name: 'Soft Gradient', linkStyle: 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md border border-white/10 text-white hover:from-blue-500/30 hover:to-purple-500/30' },
 ];
