@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { createClient } from '../utils/supabase/client';
 import { useAuth } from '../context/AuthContext';
 
@@ -28,6 +29,7 @@ const BioPagesList = () => {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
     const [activeMenu, setActiveMenu] = React.useState(null); // ID of the page whose menu is open
+    const [deleteConfirm, setDeleteConfirm] = React.useState(null); // ID of page to delete
 
     const fetchBioPages = React.useCallback(async () => {
         console.log('fetchBioPages called, user:', user);
@@ -65,8 +67,6 @@ const BioPagesList = () => {
     }, [fetchBioPages]);
 
     const deletePage = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this bio page? This action cannot be undone.')) return;
-
         try {
             const { error } = await supabase
                 .from('bio_pages')
@@ -75,6 +75,7 @@ const BioPagesList = () => {
 
             if (error) throw error;
             setBioPages(bioPages.filter(p => p.id !== id));
+            setDeleteConfirm(null);
         } catch (err) {
             alert('Error deleting page: ' + err.message);
         }
@@ -102,6 +103,19 @@ const BioPagesList = () => {
 
     return (
         <div className="space-y-10 animate-fade-in font-sans pb-20 max-w-7xl mx-auto">
+            {/* Delete Confirmation Modal */}
+            {deleteConfirm && (
+                <ConfirmDialog
+                    title="Delete Bio Page?"
+                    message="Are you sure you want to delete this bio page? This action cannot be undone and all data will be permanently lost."
+                    confirmText="Delete Page"
+                    cancelText="Cancel"
+                    variant="danger"
+                    onConfirm={() => deletePage(deleteConfirm)}
+                    onCancel={() => setDeleteConfirm(null)}
+                />
+            )}
+
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-b border-white/5 pb-10">
                 <div className="space-y-2">
@@ -228,7 +242,11 @@ const BioPagesList = () => {
                                                 </button>
                                                 <div className="h-px bg-white/5 my-1"></div>
                                                 <button
-                                                    onClick={() => deletePage(page.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActiveMenu(null);
+                                                        setDeleteConfirm(page.id);
+                                                    }}
                                                     className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-500/10 flex items-center gap-3 transition-colors"
                                                 >
                                                     <Trash2 size={14} /> Delete Page

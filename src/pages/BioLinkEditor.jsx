@@ -6,6 +6,7 @@ import Badge from '../components/ui/Badge';
 import ColorPicker from '../components/ui/ColorPicker';
 import ImageUploader from '../components/ui/ImageUploader';
 import Toast from '../components/ui/Toast';
+import IconPicker from '../components/ui/IconPicker';
 import {
     DndContext,
     closestCenter,
@@ -58,13 +59,13 @@ const SortableLinkItem = ({ link, updateLink, toggleLinkVisibility, deleteLink }
                     <GripVertical size={18} />
                 </button>
 
-                <input
-                    type="text"
-                    value={link.icon}
-                    onChange={(e) => updateLink(link.id, 'icon', e.target.value)}
-                    className="w-12 text-center bg-white/5 border border-white/10 rounded-lg py-2 text-lg focus:border-blue-500/50 focus:outline-none"
-                    placeholder="🔗"
-                />
+                <button
+                    onClick={() => setIconPickerOpen(link.id)}
+                    className="w-12 h-10 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center text-2xl hover:bg-white/10 transition-colors"
+                    title="Change icon"
+                >
+                    {link.icon || '+'}
+                </button>
 
                 <div className="flex-1 space-y-2">
                     <input
@@ -217,6 +218,7 @@ const BioLinkEditor = () => {
     const [saving, setSaving] = useState(false);
     const [bioPageId, setBioPageId] = useState(null);
     const [toast, setToast] = useState(null);
+    const [iconPickerOpen, setIconPickerOpen] = useState(null); // ID of link being edited
 
     useEffect(() => {
         const fetchBioPage = async () => {
@@ -492,6 +494,18 @@ const BioLinkEditor = () => {
                     message={toast.message}
                     type={toast.type}
                     onClose={() => setToast(null)}
+                />
+            )}
+
+            {/* Icon Picker Modal */}
+            {iconPickerOpen && (
+                <IconPicker
+                    currentIcon={links.find(l => l.id === iconPickerOpen)?.icon || ''}
+                    onSelect={(icon) => {
+                        updateLink(iconPickerOpen, 'icon', icon);
+                        setIconPickerOpen(null);
+                    }}
+                    onClose={() => setIconPickerOpen(null)}
                 />
             )}
 
