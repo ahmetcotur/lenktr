@@ -186,7 +186,7 @@ const PublicBioPage = ({ pageData }) => {
 
                     {/* Links */}
                     <div className="w-full space-y-4 mb-12">
-                        {links.filter(l => l.visible).map((link) => (
+                        {links.filter(l => l.isActive).map((link) => (
                             <a
                                 key={link.id}
                                 href={link.url}
@@ -200,18 +200,18 @@ const PublicBioPage = ({ pageData }) => {
                         ))}
                     </div>
 
-                    {/* Socials */}
-                    {socialMedia.some(s => s.active) && (
-                        <div className="flex flex-wrap justify-center gap-6 mt-auto">
-                            {socialMedia.filter(s => s.active).map(social => (
+                    {/* Social Media Icons */}
+                    {socialMedia.some(s => s.isActive && s.url) && (
+                        <div className="flex justify-center gap-5 mb-8">
+                            {socialMedia.filter(s => s.isActive && s.url).map((social) => (
                                 <a
-                                    key={social.id}
+                                    key={social.platform}
                                     href={social.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-white/80 hover:text-white hover:scale-125 transition-all text-3xl drop-shadow-xl"
+                                    className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300 hover:scale-110 shadow-lg border border-white/10"
                                 >
-                                    {socialIcons[social.id]}
+                                    <span className="text-2xl">{socialIcons[social.platform]}</span>
                                 </a>
                             ))}
                         </div>
