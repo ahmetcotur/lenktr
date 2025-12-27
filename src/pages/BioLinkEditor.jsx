@@ -979,7 +979,7 @@ const BioLinkEditor = () => {
 
                                 {/* Links */}
                                 <div className="w-full space-y-3 mb-8">
-                                    {links.filter(l => l.visible).map((link) => {
+                                    {links.filter(l => l.isActive).map((link) => {
                                         const style = uiStyles.find(s => s.id === profile.uiStyle) || uiStyles[0];
                                         return (
                                             <a
@@ -997,11 +997,11 @@ const BioLinkEditor = () => {
                                 </div>
 
                                 {/* Socials */}
-                                {socialMedia.some(s => s.active) && (
+                                {socialMedia.some(s => s.isActive && s.url) && (
                                     <div className="flex flex-wrap justify-center gap-3 mt-auto">
-                                        {socialMedia.filter(s => s.active).map(social => (
-                                            <a key={social.id} href={social.url} className="text-white/80 hover:text-white hover:scale-110 transition-all text-2xl drop-shadow-md">
-                                                {socialIcons[social.id]}
+                                        {socialMedia.filter(s => s.isActive && s.url).map(social => (
+                                            <a key={social.platform} href={social.url} className="text-white/80 hover:text-white hover:scale-110 transition-all text-2xl drop-shadow-md">
+                                                {socialIcons[social.platform]}
                                             </a>
                                         ))}
                                     </div>
