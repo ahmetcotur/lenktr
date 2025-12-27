@@ -113,7 +113,10 @@ const socialIcons = {
     youtube: <FaYoutube />,
     tiktok: <FaTiktok />,
     github: <FaGithub />,
-    discord: <FaDiscord />
+    discord: <FaDiscord />,
+    website: <Globe />,
+    email: <Mail />,
+    telegram: <Send />
 };
 
 const fonts = [
