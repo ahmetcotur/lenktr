@@ -1,5 +1,4 @@
-import React from 'react';
-import { Share2, Check } from 'lucide-react';
+import { Share2, Check, Zap } from 'lucide-react';
 import SEO from '../SEO';
 import {
     FaXTwitter,
@@ -253,12 +252,12 @@ const PublicBioPage = ({ pageData }) => {
                     {/* Branding */}
                     <a
                         href="/"
-                        className="mt-12 mb-4 flex items-center justify-center gap-2 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer group"
+                        className="mt-12 mb-4 flex items-center justify-center gap-2.5 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer group"
                     >
-                        <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-                            <div className="w-2 h-2 rounded-full bg-black group-hover:bg-white"></div>
+                        <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform duration-500">
+                            <Zap size={14} className="text-white fill-current" />
                         </div>
-                        <span className="text-xs font-black uppercase tracking-[0.3em] text-white">lenk.tr</span>
+                        <span className="text-sm font-black tracking-tighter text-white">lenk.tr</span>
                     </a>
 
                     {/* Cookie Consent Banner */}
