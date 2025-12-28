@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { motion as Motion } from 'framer-motion';
-import { Github, Zap, ArrowRight, Lock, Loader2 } from 'lucide-react';
+import { Github, Zap, ArrowRight, Lock, Loader2, Languages } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
 import Badge from '../components/ui/Badge';
 import { createClient } from '../utils/supabase/client';
+import { useTranslation } from 'react-i18next';
 
 const supabase = createClient();
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -44,8 +46,26 @@ const LoginPage = () => {
         if (error) setError(error.message);
     };
 
+    const toggleLanguage = () => {
+        const newLang = i18n.language === 'en' ? 'tr' : 'en';
+        i18n.changeLanguage(newLang);
+    };
+
     return (
         <div className="min-h-screen bg-[#08090D] flex flex-col items-center justify-center p-8 selection:bg-blue-500/30">
+            {/* Language Switcher */}
+            <div className="fixed top-8 right-8 z-50">
+                <button
+                    onClick={toggleLanguage}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
+                >
+                    <Languages size={16} className="text-blue-500" />
+                    <span className="text-xs font-black uppercase tracking-widest text-white">
+                        {i18n.language === 'en' ? 'TR' : 'EN'}
+                    </span>
+                </button>
+            </div>
+
             {/* Background Glow */}
             <div className="fixed inset-0 pointer-events-none">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full"></div>
@@ -69,8 +89,8 @@ const LoginPage = () => {
 
                 <div className="bg-[#0D0F14] border border-white/5 rounded-[40px] p-12 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)]">
                     <div className="text-center mb-10 space-y-2">
-                        <h1 className="text-3xl font-black font-heading tracking-tight text-white mt-4">Welcome Back</h1>
-                        <p className="text-gray-500 font-medium text-sm">Sign in to manage your links and bio pages.</p>
+                        <h1 className="text-3xl font-black font-heading tracking-tight text-white mt-4">{t('login.title')}</h1>
+                        <p className="text-gray-500 font-medium text-sm">{t('login.subtitle')}</p>
                     </div>
 
                     {error && (
@@ -82,10 +102,10 @@ const LoginPage = () => {
                     <form className="space-y-8" onSubmit={handleSubmit}>
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Email Address</label>
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">{t('login.emailLabel')}</label>
                                 <input
                                     type="email"
-                                    placeholder="alex@example.com"
+                                    placeholder={t('login.emailPlaceholder')}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full bg-[#0D0F14] border border-white/5 rounded-[12px] px-4 py-3.5 text-white placeholder:text-gray-700 focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all text-sm"
@@ -94,8 +114,8 @@ const LoginPage = () => {
                             </div>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Password</label>
-                                    <a href="#" className="text-[10px] text-blue-500 hover:text-blue-400 font-black uppercase tracking-widest">Forgot?</a>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{t('login.passwordLabel')}</label>
+                                    <a href="#" className="text-[10px] text-blue-500 hover:text-blue-400 font-black uppercase tracking-widest">{t('login.forgotPassword')}</a>
                                 </div>
                                 <div className="relative group">
                                     <input
@@ -113,7 +133,6 @@ const LoginPage = () => {
                         <Button
                             type="submit"
                             variant="primary"
-                            size="lg"
                             className="w-full h-14"
                             glow
                             disabled={loading}
@@ -121,31 +140,15 @@ const LoginPage = () => {
                             {loading ? (
                                 <Loader2 size={20} className="animate-spin" />
                             ) : (
-                                <>Sign In <ArrowRight size={20} className="ml-3" /></>
+                                <>{t('login.signInButton')} <ArrowRight size={20} className="ml-3" /></>
                             )}
                         </Button>
                     </form>
-
-                    <div className="relative my-10">
-                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-white/5"></div>
-                        <div className="relative flex justify-center text-[10px] font-black uppercase tracking-[0.3em] text-gray-700">
-                            <span className="bg-[#0D0F14] px-4">OR</span>
-                        </div>
-                    </div>
-
-                    <Button
-                        variant="secondary"
-                        size="md"
-                        className="w-full h-14"
-                        onClick={handleGithubLogin}
-                    >
-                        <Github size={20} className="mr-3" /> Continue with GitHub
-                    </Button>
                 </div>
 
                 <p className="text-center mt-10 text-sm font-bold text-gray-600">
-                    New to the network?{' '}
-                    <Link to="/register" className="text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest text-xs ml-2">Open account</Link>
+                    {t('login.noAccount')}{' '}
+                    <Link to="/register" className="text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest text-xs ml-2">{t('login.registerLink')}</Link>
                 </p>
             </Motion.div>
         </div>

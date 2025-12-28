@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import { Check, X, Zap, Crown, Star, Shield, Smartphone, Globe, Calendar, BarChart2, Sparkles } from 'lucide-react';
+import { Check, X, Zap, Crown, Star, Shield, Smartphone, Globe, Calendar, BarChart2, Sparkles, Languages } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import { useTranslation } from 'react-i18next';
 
 const UpgradePlan = () => {
+    const { t, i18n } = useTranslation();
     const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
+
+    const toggleLanguage = () => {
+        const newLang = i18n.language === 'en' ? 'tr' : 'en';
+        i18n.changeLanguage(newLang);
+    };
 
     const plans = [
         {
@@ -69,14 +76,27 @@ const UpgradePlan = () => {
 
     return (
         <div className="min-h-screen bg-[#08090D] pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+            {/* Language Switcher */}
+            <div className="fixed top-8 right-8 z-50">
+                <button
+                    onClick={toggleLanguage}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
+                >
+                    <Languages size={16} className="text-blue-500" />
+                    <span className="text-xs font-black uppercase tracking-widest text-white">
+                        {i18n.language === 'en' ? 'TR' : 'EN'}
+                    </span>
+                </button>
+            </div>
+
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
-                        Unlock Your Full <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Potential</span>
+                        {t('upgrade.title').split(' Potential')[0]} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">{t('upgrade.title').includes('Potential') ? 'Potential' : 'Potansiyelinizi'}</span>
                     </h1>
                     <p className="text-xl text-zinc-400 mb-8">
-                        Upgrade to Pro to remove branding, use custom domains, and access powerful analytics.
+                        {t('upgrade.subtitle')}
                     </p>
 
                     {/* Billing Toggle */}
@@ -85,13 +105,13 @@ const UpgradePlan = () => {
                             onClick={() => setBillingCycle('monthly')}
                             className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-white text-black shadow-lg' : 'text-zinc-400 hover:text-white'}`}
                         >
-                            Monthly
+                            {t('upgrade.monthly')}
                         </button>
                         <button
                             onClick={() => setBillingCycle('yearly')}
                             className={`px-6 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-white text-black shadow-lg' : 'text-zinc-400 hover:text-white'}`}
                         >
-                            Yearly <Badge variant="success" size="sm" className="bg-lime-500 text-black border-none px-1 py-0 text-[10px]">-20%</Badge>
+                            {t('upgrade.yearly')} <Badge variant="success" size="sm" className="bg-lime-500 text-black border-none px-1 py-0 text-[10px]">{t('upgrade.billing.discount')}</Badge>
                         </button>
                     </div>
                 </div>
@@ -110,12 +130,12 @@ const UpgradePlan = () => {
                             >
                                 {plan.popular && (
                                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg border border-white/20">
-                                        Most Popular
+                                        {t('upgrade.mostPopular')}
                                     </div>
                                 )}
                                 {isLifetime && (
                                     <div className="absolute top-0 right-8 -translate-y-1/2 bg-lime-500 text-black text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
-                                        Best Value
+                                        {t('upgrade.bestValue')}
                                     </div>
                                 )}
 
@@ -124,17 +144,17 @@ const UpgradePlan = () => {
                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isPro ? 'bg-blue-500 text-white' : 'bg-white/5 text-zinc-400'}`}>
                                             {plan.icon ? <plan.icon size={24} /> : <Star size={24} />}
                                         </div>
-                                        {isPro && <div className="text-blue-400 font-bold text-sm flex items-center gap-1"><Sparkles size={14} /> Recommended</div>}
+                                        {isPro && <div className="text-blue-400 font-bold text-sm flex items-center gap-1"><Sparkles size={14} /> {t('upgrade.recommended')}</div>}
                                     </div>
-                                    <h3 className="text-2xl font-black text-white mb-2">{plan.name}</h3>
-                                    <p className="text-zinc-500 text-sm h-10">{plan.desc}</p>
+                                    <h3 className="text-2xl font-black text-white mb-2">{t(`upgrade.plans.${plan.id}.name`)}</h3>
+                                    <p className="text-zinc-500 text-sm h-10">{t(`upgrade.plans.${plan.id}.desc`)}</p>
                                 </div>
 
                                 <div className="mb-8">
                                     <div className="flex items-end gap-1">
                                         <span className="text-4xl font-black text-white">${price}</span>
-                                        {!isLifetime && <span className="text-zinc-500 font-medium mb-1">/mo</span>}
-                                        {isLifetime && <span className="text-lime-500 font-black text-sm mb-2 ml-1 uppercase">One-time</span>}
+                                        {!isLifetime && <span className="text-zinc-500 font-medium mb-1">{t('upgrade.billing.perMonth')}</span>}
+                                        {isLifetime && <span className="text-lime-500 font-black text-sm mb-2 ml-1 uppercase">{t('upgrade.plans.lifetime.oneTime')}</span>}
                                     </div>
                                     {billingCycle === 'yearly' && plan.price.yearly > 0 && !isLifetime && (
                                         <p className="text-xs text-lime-500 mt-2 font-bold">Billed ${plan.price.yearly} yearly</p>
@@ -160,7 +180,7 @@ const UpgradePlan = () => {
                                     glow={isPro}
                                     size="lg"
                                 >
-                                    {plan.cta}
+                                    {t(`upgrade.plans.${plan.id}.cta`)}
                                 </Button>
                             </div>
                         );
@@ -169,12 +189,12 @@ const UpgradePlan = () => {
 
                 {/* FAQ Section */}
                 <div className="max-w-3xl mx-auto space-y-8">
-                    <h2 className="text-2xl font-bold text-white text-center mb-8">Frequently Asked Questions</h2>
+                    <h2 className="text-2xl font-bold text-white text-center mb-8">{t('upgrade.faqTitle')}</h2>
                     <div className="grid gap-4">
                         {[
-                            { q: 'Can I cancel anytime?', a: 'Yes, you can cancel your subscription at any time. Your plan will remain active until the end of the billing period.' },
-                            { q: 'Can I use my own domain?', a: 'Yes! Pro and Agency plans support custom domains so you can use your own web address.' },
-                            { q: 'What payment methods do you accept?', a: 'We accept all major credit cards, PayPal, and Apple Pay.' }
+                            { q: t('upgrade.faq.q1'), a: t('upgrade.faq.a1') },
+                            { q: t('upgrade.faq.q2'), a: t('upgrade.faq.a2') },
+                            { q: t('upgrade.faq.q3'), a: t('upgrade.faq.a3') }
                         ].map((faq, i) => (
                             <div key={i} className="bg-[#0D0F14] border border-white/5 rounded-xl p-6">
                                 <h4 className="font-bold text-white mb-2">{faq.q}</h4>

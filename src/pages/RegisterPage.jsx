@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { motion as Motion } from 'framer-motion';
-import { Github, Zap, Check, Server, Loader2, ArrowRight } from 'lucide-react';
+import { Zap, Check, Loader2, ArrowRight, Languages } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
 import Badge from '../components/ui/Badge';
 import { createClient } from '../utils/supabase/client';
+import { useTranslation } from 'react-i18next';
 
 const supabase = createClient();
 
 const RegisterPage = () => {
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
@@ -45,18 +47,26 @@ const RegisterPage = () => {
         }
     };
 
-    const handleGithubLogin = async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'github',
-            options: {
-                redirectTo: `${window.location.origin}/dashboard`
-            }
-        });
-        if (error) setError(error.message);
+    const toggleLanguage = () => {
+        const newLang = i18n.language === 'en' ? 'tr' : 'en';
+        i18n.changeLanguage(newLang);
     };
 
     return (
         <div className="min-h-screen bg-[#08090D] flex flex-col items-center justify-center p-8 selection:bg-blue-500/30">
+            {/* Language Switcher */}
+            <div className="fixed top-8 right-8 z-50">
+                <button
+                    onClick={toggleLanguage}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
+                >
+                    <Languages size={16} className="text-blue-500" />
+                    <span className="text-xs font-black uppercase tracking-widest text-white">
+                        {i18n.language === 'en' ? 'TR' : 'EN'}
+                    </span>
+                </button>
+            </div>
+
             {/* Background Glow */}
             <div className="fixed inset-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full"></div>
@@ -81,8 +91,8 @@ const RegisterPage = () => {
 
                 <div className="bg-[#0D0F14] border border-white/5 rounded-[40px] p-12 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)]">
                     <div className="text-center mb-10 space-y-2">
-                        <h1 className="text-3xl font-black font-heading tracking-tight text-white mt-4">Create Account</h1>
-                        <p className="text-gray-500 font-medium">Start shortening links and build your bio page.</p>
+                        <h1 className="text-3xl font-black font-heading tracking-tight text-white mt-4">{t('register.title')}</h1>
+                        <p className="text-gray-500 font-medium">{t('register.subtitle')}</p>
                     </div>
 
                     {error && (
@@ -94,9 +104,9 @@ const RegisterPage = () => {
                     <form className="space-y-8" onSubmit={handleSubmit}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">First Name</label>
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">{t('register.firstNameLabel')}</label>
                                 <input
-                                    placeholder="Alex"
+                                    placeholder={t('register.firstNamePlaceholder')}
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
                                     className="w-full bg-[#0D0F14] border border-white/5 rounded-[12px] px-4 py-3.5 text-white placeholder:text-gray-700 focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all text-sm"
@@ -104,9 +114,9 @@ const RegisterPage = () => {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Last Name</label>
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">{t('register.lastNameLabel')}</label>
                                 <input
-                                    placeholder="Rivera"
+                                    placeholder={t('register.lastNamePlaceholder')}
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
                                     className="w-full bg-[#0D0F14] border border-white/5 rounded-[12px] px-4 py-3.5 text-white placeholder:text-gray-700 focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all text-sm"
@@ -116,10 +126,10 @@ const RegisterPage = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Email Address</label>
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">{t('register.emailLabel')}</label>
                             <input
                                 type="email"
-                                placeholder="alex@example.com"
+                                placeholder={t('register.emailPlaceholder')}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-[#0D0F14] border border-white/5 rounded-[12px] px-4 py-3.5 text-white placeholder:text-gray-700 focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all text-sm"
@@ -128,10 +138,10 @@ const RegisterPage = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Password</label>
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">{t('register.passwordLabel')}</label>
                             <input
                                 type="password"
-                                placeholder="••••••••"
+                                placeholder={t('register.passwordPlaceholder')}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full bg-[#0D0F14] border border-white/5 rounded-[12px] px-4 py-3.5 text-white placeholder:text-gray-700 focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all text-sm"
@@ -144,7 +154,10 @@ const RegisterPage = () => {
                                 <Check size={14} className="text-white" strokeWidth={4} />
                             </div>
                             <p className="text-[11px] font-semibold text-gray-500 leading-relaxed">
-                                I agree to the <span className="text-white font-black cursor-pointer underline underline-offset-4 decoration-white/10">Terms</span> and <span className="text-white font-black cursor-pointer underline underline-offset-4 decoration-white/10">Privacy Policy</span>.
+                                {t('register.termsAgree').split('Terms')[0]}
+                                <span className="text-white font-black cursor-pointer underline underline-offset-4 decoration-white/10">{t('register.terms')}</span>
+                                {t('register.termsAgree').includes('and') ? ' and ' : ' ve '}
+                                <span className="text-white font-black cursor-pointer underline underline-offset-4 decoration-white/10">{t('register.privacy')}</span>.
                             </p>
                         </div>
 
@@ -159,31 +172,15 @@ const RegisterPage = () => {
                             {loading ? (
                                 <Loader2 size={20} className="animate-spin" />
                             ) : (
-                                <>Get Started <ArrowRight size={20} className="ml-3" /></>
+                                <>{t('register.submitButton')} <ArrowRight size={20} className="ml-3" /></>
                             )}
                         </Button>
                     </form>
-
-                    <div className="relative my-10">
-                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-white/5"></div>
-                        <div className="relative flex justify-center text-[10px] font-black uppercase tracking-[0.3em] text-gray-700">
-                            <span className="bg-[#0D0F14] px-4">OR</span>
-                        </div>
-                    </div>
-
-                    <Button
-                        variant="secondary"
-                        size="md"
-                        className="w-full h-14"
-                        onClick={handleGithubLogin}
-                    >
-                        <Github size={20} className="mr-3" /> Register with GitHub
-                    </Button>
                 </div>
 
                 <p className="text-center mt-10 text-sm font-bold text-gray-600">
-                    Already have an account?{' '}
-                    <Link to="/login" className="text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest text-xs ml-2">Sign In</Link>
+                    {t('register.hasAccount')}{' '}
+                    <Link to="/login" className="text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest text-xs ml-2">{t('register.loginLink')}</Link>
                 </p>
             </Motion.div>
         </div>

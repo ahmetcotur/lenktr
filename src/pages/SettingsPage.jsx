@@ -18,10 +18,12 @@ import Badge from '../components/ui/Badge';
 import { useAuth } from '../context/AuthContext';
 import { createClient } from '../utils/supabase/client';
 import { uploadImage } from '../utils/supabase/storage';
+import { useTranslation } from 'react-i18next';
 
 const supabase = createClient();
 
 const SettingsPage = () => {
+    const { t } = useTranslation();
     const { user: authUser } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get('tab') || 'profile';
@@ -50,15 +52,15 @@ const SettingsPage = () => {
             const { url, error } = await uploadImage(file, 'avatars', authUser.id);
 
             if (error) {
-                setMessage({ type: 'error', text: 'Failed to upload avatar. Please try again.' });
+                setMessage({ type: 'error', text: t('settings.profile.uploadError') });
                 return;
             }
 
             setProfile({ ...profile, avatar: url });
-            setMessage({ type: 'success', text: 'Avatar uploaded successfully! Click Save Changes to update.' });
+            setMessage({ type: 'success', text: t('settings.profile.uploadSuccess') });
         } catch (error) {
             console.error('Avatar upload error:', error);
-            setMessage({ type: 'error', text: 'Failed to upload avatar. Please try again.' });
+            setMessage({ type: 'error', text: t('settings.profile.uploadError') });
         } finally {
             setLoading(false);
         }
@@ -89,7 +91,7 @@ const SettingsPage = () => {
 
             if (profileError) throw profileError;
 
-            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            setMessage({ type: 'success', text: t('settings.profile.updateSuccess') });
         } catch (err) {
             setMessage({ type: 'error', text: err.message });
         } finally {
@@ -105,18 +107,18 @@ const SettingsPage = () => {
     });
 
     const tabs = [
-        { id: 'profile', label: 'Profile', icon: User },
-        { id: 'notifications', label: 'Notifications', icon: Bell },
-        { id: 'security', label: 'Security', icon: Shield },
-        { id: 'billing', label: 'Billing', icon: CreditCard },
+        { id: 'profile', label: t('settings.tabs.profile'), icon: User },
+        { id: 'notifications', label: t('settings.tabs.notifications'), icon: Bell },
+        { id: 'security', label: t('settings.tabs.security'), icon: Shield },
+        { id: 'billing', label: t('settings.tabs.billing'), icon: CreditCard },
     ];
 
     return (
         <div className="max-w-4xl mx-auto animate-fade-in">
             {/* Header */}
             <div className="mb-8 md:mb-12">
-                <h1 className="text-3xl md:text-4xl font-black text-white italic tracking-tighter uppercase mb-2">Settings</h1>
-                <p className="text-zinc-500 font-medium">Manage your account preferences and workspace settings.</p>
+                <h1 className="text-3xl md:text-4xl font-black text-white italic tracking-tighter uppercase mb-2">{t('settings.header.title')}</h1>
+                <p className="text-zinc-500 font-medium">{t('settings.header.subtitle')}</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -142,7 +144,7 @@ const SettingsPage = () => {
                         {activeTab === 'profile' && (
                             <div className="space-y-8">
                                 <div>
-                                    <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6">Public Profile</h2>
+                                    <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6">{t('settings.profile.title')}</h2>
                                     {message && (
                                         <div className={`p-4 rounded-xl border text-xs font-bold uppercase tracking-wider text-center ${message.type === 'success' ? 'bg-blue-500/10 border-blue-500/20 text-blue-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
                                             {message.text}
@@ -175,21 +177,21 @@ const SettingsPage = () => {
                                             />
                                         </div>
                                         <div>
-                                            <h3 className="text-white font-bold text-lg mb-1">{profile.name || 'Anonymous User'}</h3>
+                                            <h3 className="text-white font-bold text-lg mb-1">{profile.name || t('settings.profile.anonymous')}</h3>
                                             <p className="text-zinc-500 text-sm mb-3">{profile.role}</p>
                                             <button
                                                 onClick={() => setProfile({ ...profile, avatar: '' })}
                                                 disabled={loading}
                                                 className="px-4 py-2 text-xs font-bold text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                Remove Picture
+                                                {t('settings.profile.removePhoto')}
                                             </button>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-black text-zinc-500 uppercase tracking-wider">Display Name</label>
+                                            <label className="text-xs font-black text-zinc-500 uppercase tracking-wider">{t('settings.profile.displayName')}</label>
                                             <div className="relative">
                                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
                                                 <input
@@ -201,7 +203,7 @@ const SettingsPage = () => {
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-black text-zinc-500 uppercase tracking-wider">Email Address</label>
+                                            <label className="text-xs font-black text-zinc-500 uppercase tracking-wider">{t('settings.profile.email')}</label>
                                             <div className="relative">
                                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
                                                 <input
@@ -216,7 +218,7 @@ const SettingsPage = () => {
                                 </div>
                                 <div className="border-t border-white/5 pt-6 flex justify-end">
                                     <Button variant="primary" glow onClick={handleUpdateProfile} disabled={loading}>
-                                        {loading ? 'Saving...' : 'Save Changes'}
+                                        {loading ? t('common.saving') : t('common.saveChanges')}
                                     </Button>
                                 </div>
                             </div>
@@ -226,16 +228,16 @@ const SettingsPage = () => {
                         {activeTab === 'notifications' && (
                             <div className="space-y-8">
                                 <div>
-                                    <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6">Notification Preferences</h2>
-                                    <p className="text-zinc-500 text-sm mb-8">Manage how you receive updates and alerts.</p>
+                                    <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6">{t('settings.notifications.title')}</h2>
+                                    <p className="text-zinc-500 text-sm mb-8">{t('settings.notifications.subtitle')}</p>
 
                                     <div className="space-y-6">
                                         <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                                             <div className="flex items-center gap-4">
                                                 <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500"><Mail size={20} /></div>
                                                 <div>
-                                                    <h4 className="text-white font-bold text-sm">Email Notifications</h4>
-                                                    <p className="text-zinc-500 text-xs">Receive daily summaries and lead alerts.</p>
+                                                    <h4 className="text-white font-bold text-sm">{t('settings.notifications.email.title')}</h4>
+                                                    <p className="text-zinc-500 text-xs">{t('settings.notifications.email.desc')}</p>
                                                 </div>
                                             </div>
                                             <div
@@ -250,8 +252,8 @@ const SettingsPage = () => {
                                             <div className="flex items-center gap-4">
                                                 <div className="p-3 bg-purple-500/10 rounded-xl text-purple-500"><Smartphone size={20} /></div>
                                                 <div>
-                                                    <h4 className="text-white font-bold text-sm">Push Notifications</h4>
-                                                    <p className="text-zinc-500 text-xs">Real-time alerts for new clicks and activity.</p>
+                                                    <h4 className="text-white font-bold text-sm">{t('settings.notifications.push.title')}</h4>
+                                                    <p className="text-zinc-500 text-xs">{t('settings.notifications.push.desc')}</p>
                                                 </div>
                                             </div>
                                             <div
@@ -266,8 +268,8 @@ const SettingsPage = () => {
                                             <div className="flex items-center gap-4">
                                                 <div className="p-3 bg-lime-500/10 rounded-xl text-lime-500"><Globe size={20} /></div>
                                                 <div>
-                                                    <h4 className="text-white font-bold text-sm">Marketing Updates</h4>
-                                                    <p className="text-zinc-500 text-xs">News about product features and tips.</p>
+                                                    <h4 className="text-white font-bold text-sm">{t('settings.notifications.marketing.title')}</h4>
+                                                    <p className="text-zinc-500 text-xs">{t('settings.notifications.marketing.desc')}</p>
                                                 </div>
                                             </div>
                                             <div
@@ -286,21 +288,21 @@ const SettingsPage = () => {
                         {activeTab === 'security' && (
                             <div className="space-y-8">
                                 <div>
-                                    <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6">Security Settings</h2>
+                                    <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6">{t('settings.security.title')}</h2>
 
                                     <div className="space-y-6">
                                         <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
                                             <div className="flex items-center justify-between mb-6">
                                                 <div>
-                                                    <h4 className="text-white font-bold">Password</h4>
-                                                    <p className="text-zinc-500 text-sm">Last changed 3 months ago.</p>
+                                                    <h4 className="text-white font-bold">{t('settings.security.password.title')}</h4>
+                                                    <p className="text-zinc-500 text-sm">{t('settings.security.password.lastChanged')}</p>
                                                 </div>
-                                                <Button variant="outline" size="sm">Update Password</Button>
+                                                <Button variant="outline" size="sm">{t('settings.security.password.action')}</Button>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="relative">
                                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
-                                                    <input type="password" placeholder="Current Password" className="w-full bg-[#08090D] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-blue-500" />
+                                                    <input type="password" placeholder={t('settings.security.password.placeholder')} className="w-full bg-[#08090D] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-blue-500" />
                                                 </div>
                                             </div>
                                         </div>
@@ -308,12 +310,12 @@ const SettingsPage = () => {
                                         <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
                                             <div>
                                                 <h4 className="text-white font-bold flex items-center gap-2">
-                                                    Two-Factor Authentication
-                                                    <Badge variant="default" size="sm" className="bg-zinc-700 text-zinc-300 border-none">Disabled</Badge>
+                                                    {t('settings.security.2fa.title')}
+                                                    <Badge variant="default" size="sm" className="bg-zinc-700 text-zinc-300 border-none">{t('settings.security.2fa.disabled')}</Badge>
                                                 </h4>
-                                                <p className="text-zinc-500 text-sm max-w-sm mt-1">Add an extra layer of security to your account using an authenticator app.</p>
+                                                <p className="text-zinc-500 text-sm max-w-sm mt-1">{t('settings.security.2fa.desc')}</p>
                                             </div>
-                                            <Button variant="primary">Enable 2FA</Button>
+                                            <Button variant="primary">{t('settings.security.2fa.action')}</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -324,30 +326,30 @@ const SettingsPage = () => {
                         {activeTab === 'billing' && (
                             <div className="space-y-8">
                                 <div>
-                                    <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6">Billing & Plan</h2>
+                                    <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6">{t('settings.billing.title')}</h2>
 
                                     <div className="p-6 bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-2xl border border-blue-500/20 mb-8">
                                         <div className="flex items-center justify-between mb-4">
                                             <div>
-                                                <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-1">Current Plan</p>
-                                                <h3 className="text-2xl font-black text-white uppercase italic">Free Starter</h3>
+                                                <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-1">{t('settings.billing.plan.current')}</p>
+                                                <h3 className="text-2xl font-black text-white uppercase italic">{t('settings.billing.plan.free')}</h3>
                                             </div>
-                                            <Badge variant="primary" className="bg-blue-600 text-white">Active</Badge>
+                                            <Badge variant="primary" className="bg-blue-600 text-white">{t('settings.billing.plan.active')}</Badge>
                                         </div>
                                         <div className="h-1 w-full bg-white/10 rounded-full mb-4 overflow-hidden">
                                             <div className="h-full w-3/4 bg-blue-500"></div>
                                         </div>
                                         <div className="flex justify-between text-xs text-zinc-400 mb-6">
-                                            <span>750 / 1000 clicks used</span>
-                                            <span>Resets in 12 days</span>
+                                            <span>{t('settings.billing.plan.usage')}</span>
+                                            <span>{t('settings.billing.plan.reset')}</span>
                                         </div>
                                         <div className="flex gap-3">
-                                            <Button variant="primary" glow onClick={() => window.location.href = '/upgrade'}>Upgrade to Pro</Button>
-                                            <Button variant="outline">Manage Subscription</Button>
+                                            <Button variant="primary" glow onClick={() => window.location.href = '/upgrade'}>{t('settings.billing.plan.upgrade')}</Button>
+                                            <Button variant="outline">{t('settings.billing.plan.manage')}</Button>
                                         </div>
                                     </div>
 
-                                    <h4 className="text-white font-bold mb-4">Payment Methods</h4>
+                                    <h4 className="text-white font-bold mb-4">{t('settings.billing.payment.title')}</h4>
                                     <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className="p-2 bg-white rounded-lg">
@@ -358,11 +360,11 @@ const SettingsPage = () => {
                                                 </div>
                                             </div>
                                             <div>
-                                                <p className="text-white text-sm font-bold">Mastercard ending in 4242</p>
-                                                <p className="text-zinc-500 text-xs">Expires 12/28</p>
+                                                <p className="text-white text-sm font-bold">{t('settings.billing.payment.method')}</p>
+                                                <p className="text-zinc-500 text-xs">{t('settings.billing.payment.expires')}</p>
                                             </div>
                                         </div>
-                                        <Button variant="ghost" size="sm">Edit</Button>
+                                        <Button variant="ghost" size="sm">{t('common.edit')}</Button>
                                     </div>
                                 </div>
                             </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, GripVertical, Eye, Save, Palette, Type, Layout, Upload, Image, ChevronLeft, ChevronDown, Check, Calendar, ShieldAlert, Cookie, Share2, Lock, AlertTriangle, Activity, Globe, Mail, Send } from 'lucide-react';
 import { FaXTwitter, FaInstagram, FaFacebook, FaLinkedin, FaYoutube, FaTiktok, FaGithub, FaDiscord } from 'react-icons/fa6';
+import { useTranslation } from 'react-i18next';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import ColorPicker from '../components/ui/ColorPicker';
@@ -31,6 +32,7 @@ const supabase = createClient();
 
 // Sortable Link Item Component
 const SortableLinkItem = ({ link, updateLink, toggleLinkVisibility, deleteLink, setIconPickerOpen }) => {
+    const { t } = useTranslation();
     const {
         attributes,
         listeners,
@@ -62,7 +64,7 @@ const SortableLinkItem = ({ link, updateLink, toggleLinkVisibility, deleteLink, 
                 <button
                     onClick={() => setIconPickerOpen(link.id)}
                     className="w-12 h-10 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center text-2xl hover:bg-white/10 transition-colors"
-                    title="Change icon"
+                    title={t('bioEditor.links.changeIcon')}
                 >
                     {link.icon || '+'}
                 </button>
@@ -73,14 +75,14 @@ const SortableLinkItem = ({ link, updateLink, toggleLinkVisibility, deleteLink, 
                         value={link.title}
                         onChange={(e) => updateLink(link.id, 'title', e.target.value)}
                         className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-bold focus:border-blue-500/50 focus:outline-none"
-                        placeholder="Link Title"
+                        placeholder={t('bioEditor.links.title')}
                     />
                     <input
                         type="url"
                         value={link.url}
                         onChange={(e) => updateLink(link.id, 'url', e.target.value)}
                         className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-xs font-mono focus:border-blue-500/50 focus:outline-none"
-                        placeholder="https://example.com"
+                        placeholder={t('bioEditor.links.url')}
                     />
                 </div>
 
@@ -159,6 +161,7 @@ const BioLinkEditor = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const pageId = searchParams.get('id');
+    const { t } = useTranslation();
     const avatarInputRef = useRef(null);
     const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
     const [slug, setSlug] = useState('');
@@ -220,6 +223,10 @@ const BioLinkEditor = () => {
     const [toast, setToast] = useState(null);
     const [iconPickerOpen, setIconPickerOpen] = useState(null); // ID of link being edited
 
+    // Preview overlay states
+    const [showAdultWarning, setShowAdultWarning] = useState(false);
+    const [showCookieConsent, setShowCookieConsent] = useState(false);
+
     useEffect(() => {
         const fetchBioPage = async () => {
             if (!user) return;
@@ -278,10 +285,16 @@ const BioLinkEditor = () => {
         fetchBioPage();
     }, [user, pageId]);
 
+    // Sync preview overlay states with profile toggles
+    useEffect(() => {
+        setShowAdultWarning(profile.adultWarning);
+        setShowCookieConsent(profile.cookieConsent);
+    }, [profile.adultWarning, profile.cookieConsent]);
+
     const handleSave = async () => {
         if (!user) return;
         if (!slug) {
-            setToast({ message: 'Please enter a slug for your page', type: 'error' });
+            setToast({ message: t('bioEditor.toast.slugRequired'), type: 'error' });
             setTimeout(() => setToast(null), 3000);
             return;
         }
@@ -308,7 +321,7 @@ const BioLinkEditor = () => {
                     .eq('id', bioPageId);
 
                 if (updateError) throw updateError;
-                setToast({ message: '✨ Bio page updated successfully!', type: 'success' });
+                setToast({ message: t('bioEditor.toast.updated'), type: 'success' });
             } else {
                 const { data: newData, error: insertError } = await supabase
                     .from('bio_pages')
@@ -318,12 +331,12 @@ const BioLinkEditor = () => {
 
                 if (insertError) throw insertError;
                 if (newData) setBioPageId(newData.id);
-                setToast({ message: '🎉 Bio page created successfully!', type: 'success' });
+                setToast({ message: t('bioEditor.toast.created'), type: 'success' });
             }
 
             setTimeout(() => setToast(null), 3000);
         } catch (err) {
-            setToast({ message: 'Error: ' + err.message, type: 'error' });
+            setToast({ message: t('bioEditor.toast.error', { message: err.message }), type: 'error' });
             setTimeout(() => setToast(null), 4000);
         } finally {
             setSaving(false);
@@ -416,8 +429,8 @@ const BioLinkEditor = () => {
     const addLink = () => {
         const newLink = {
             id: Date.now(),
-            title: 'New Link',
-            url: 'https://example.com',
+            title: t('bioEditor.links.title'),
+            url: t('bioEditor.links.url'),
             icon: '🔗',
             visible: true
         };
@@ -519,8 +532,8 @@ const BioLinkEditor = () => {
                         <ChevronLeft size={20} />
                     </button>
                     <div>
-                        <h2 className="text-xl font-bold bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">Design Editor</h2>
-                        <p className="text-xs text-zinc-500 font-medium">Customize your bio page</p>
+                        <h2 className="text-xl font-bold bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">{t('bioEditor.title')}</h2>
+                        <p className="text-xs text-zinc-500 font-medium">{t('bioEditor.subtitle')}</p>
                     </div>
                 </div>
 
@@ -529,7 +542,7 @@ const BioLinkEditor = () => {
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-4">
                             <Type size={16} className="text-blue-500" />
-                            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Profile Details</h3>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">{t('bioEditor.sections.profile')}</h3>
                         </div>
 
                         <div className="flex items-center gap-4">
@@ -555,7 +568,7 @@ const BioLinkEditor = () => {
                                     value={profile.displayName}
                                     onChange={(e) => setProfile({ ...profile, displayName: e.target.value })}
                                     className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:border-blue-500/50 outline-none transition-all placeholder:text-zinc-600"
-                                    placeholder="Display Name"
+                                    placeholder={t('bioEditor.profile.displayName')}
                                 />
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs text-zinc-500 font-mono">lenk.tr/</span>
@@ -564,7 +577,7 @@ const BioLinkEditor = () => {
                                         value={slug}
                                         onChange={(e) => setSlug(e.target.value)}
                                         className="flex-1 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-blue-400 font-bold focus:border-blue-500/50 outline-none transition-all placeholder:text-zinc-600 font-mono"
-                                        placeholder="your-slug"
+                                        placeholder={t('bioEditor.profile.slug')}
                                     />
                                 </div>
                             </div>
@@ -575,7 +588,7 @@ const BioLinkEditor = () => {
                             onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                             rows={3}
                             className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:border-blue-500/50 outline-none transition-all placeholder:text-zinc-600 resize-none"
-                            placeholder="Write a short bio..."
+                            placeholder={t('bioEditor.profile.bio')}
                         />
                     </div>
 
@@ -586,10 +599,10 @@ const BioLinkEditor = () => {
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
                                 <GripVertical size={16} className="text-purple-500" />
-                                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Links</h3>
+                                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">{t('bioEditor.sections.links')}</h3>
                             </div>
                             <button onClick={addLink} className="text-xs font-bold text-blue-500 hover:text-blue-400 flex items-center gap-1">
-                                <Plus size={14} /> Add New
+                                <Plus size={14} /> {t('bioEditor.links.addNew')}
                             </button>
                         </div>
 
@@ -617,7 +630,7 @@ const BioLinkEditor = () => {
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-4">
                             <span className="text-pink-500 font-bold text-lg">@</span>
-                            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Socials</h3>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">{t('bioEditor.sections.socials')}</h3>
                         </div>
 
                         <div className="grid grid-cols-1 gap-3">
@@ -642,7 +655,7 @@ const BioLinkEditor = () => {
                                                     s.platform === social.platform ? { ...s, url: e.target.value } : s
                                                 ));
                                             }}
-                                            placeholder={`Your ${social.platform} URL`}
+                                            placeholder={t('bioEditor.socials.urlPlaceholder', { platform: social.platform })}
                                             className="flex-1 px-4 py-2.5 bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
                                         />
                                     )}
@@ -657,7 +670,7 @@ const BioLinkEditor = () => {
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-4">
                             <Palette size={16} className="text-pink-500" />
-                            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Appearance</h3>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">{t('bioEditor.sections.appearance')}</h3>
                         </div>
 
                         {/* Theme Colors */}
@@ -678,18 +691,18 @@ const BioLinkEditor = () => {
 
                         {/* Custom Gradient */}
                         <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/5">
-                            <label className="block text-xs font-bold text-zinc-500 mb-3 uppercase tracking-wider">Custom Gradient</label>
+                            <label className="block text-xs font-bold text-zinc-500 mb-3 uppercase tracking-wider">{t('bioEditor.appearance.customGradient')}</label>
                             <div className="flex gap-4">
                                 <div className="flex-1">
                                     <ColorPicker
-                                        label="Start Color"
+                                        label={t('bioEditor.appearance.startColor')}
                                         value={profile.customColors.color1}
                                         onChange={(val) => setProfile({ ...profile, customColors: { ...profile.customColors, color1: val } })}
                                     />
                                 </div>
                                 <div className="flex-1">
                                     <ColorPicker
-                                        label="End Color"
+                                        label={t('bioEditor.appearance.endColor')}
                                         value={profile.customColors.color2}
                                         onChange={(val) => setProfile({ ...profile, customColors: { ...profile.customColors, color2: val } })}
                                     />
@@ -699,13 +712,13 @@ const BioLinkEditor = () => {
 
                         {/* Font Selection */}
                         <div className="mb-6 relative">
-                            <label className="block text-xs font-bold text-zinc-500 mb-2">Font Family</label>
+                            <label className="block text-xs font-bold text-zinc-500 mb-2">{t('bioEditor.appearance.fontFamily')}</label>
                             <button
                                 onClick={() => setIsFontDropdownOpen(!isFontDropdownOpen)}
                                 className="w-full px-3 py-3 bg-white/5 border border-white/10 rounded-xl text-left flex items-center justify-between hover:bg-white/10 transition-colors"
                             >
                                 <span style={{ fontFamily: profile.font }} className="text-sm font-medium">
-                                    {fonts.find(f => f.family === profile.font)?.name || 'System Font'}
+                                    {fonts.find(f => f.family === profile.font)?.name || t('bioEditor.appearance.systemFont')}
                                 </span>
                                 <ChevronDown size={16} className={`text-zinc-500 transition-transform ${isFontDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
@@ -736,20 +749,20 @@ const BioLinkEditor = () => {
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-4">
                                 <Activity size={16} className="text-orange-500" />
-                                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Page Settings</h3>
+                                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">{t('bioEditor.sections.settings')}</h3>
                             </div>
 
                             {/* Pro Features Group */}
                             <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-yellow-500/5 to-orange-500/5 border border-yellow-500/20 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-[10px] font-black text-black">PRO</div>
+                                <div className="absolute top-0 right-0 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-[10px] font-black text-black">{t('bioEditor.settings.pro')}</div>
 
                                 {/* Schedule Date */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <label className="text-xs font-bold text-zinc-400 flex items-center gap-2">
-                                            <Calendar size={14} /> Schedule Date
+                                            <Calendar size={14} /> {t('bioEditor.settings.scheduleDate')}
                                         </label>
-                                        <span className="text-[10px] text-zinc-600 font-mono">None</span>
+                                        <span className="text-[10px] text-zinc-600 font-mono">{t('bioEditor.settings.none')}</span>
                                     </div>
                                     <input type="datetime-local" className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white" disabled />
                                 </div>
@@ -758,9 +771,9 @@ const BioLinkEditor = () => {
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <label className="text-xs font-bold text-zinc-400 flex items-center gap-2">
-                                            <Calendar size={14} /> Expiration Date
+                                            <Calendar size={14} /> {t('bioEditor.settings.expirationDate')}
                                         </label>
-                                        <span className="text-[10px] text-zinc-600 font-mono">None</span>
+                                        <span className="text-[10px] text-zinc-600 font-mono">{t('bioEditor.settings.none')}</span>
                                     </div>
                                     <input type="datetime-local" className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white" disabled />
                                 </div>
@@ -769,11 +782,11 @@ const BioLinkEditor = () => {
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <label className="text-xs font-bold text-zinc-400 flex items-center gap-2">
-                                            <Activity size={14} /> Tracking Pixels
+                                            <Activity size={14} /> {t('bioEditor.settings.trackingPixels')}
                                         </label>
                                     </div>
                                     <button className="w-full py-2 bg-black/20 border border-white/10 rounded-lg text-xs text-zinc-400 hover:text-white hover:border-white/20 transition-colors flex items-center justify-center gap-2">
-                                        <Plus size={14} /> Attach Pixel
+                                        <Plus size={14} /> {t('bioEditor.settings.attachPixel')}
                                     </button>
                                 </div>
                             </div>
@@ -785,7 +798,7 @@ const BioLinkEditor = () => {
                                         <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
                                             <Cookie size={16} />
                                         </div>
-                                        <span className="text-xs font-bold text-zinc-300">Cookie Consent</span>
+                                        <span className="text-xs font-bold text-zinc-300">{t('bioEditor.settings.cookieConsent')}</span>
                                     </div>
                                     <button
                                         onClick={() => setProfile({ ...profile, cookieConsent: !profile.cookieConsent })}
@@ -800,7 +813,7 @@ const BioLinkEditor = () => {
                                         <div className="p-2 rounded-lg bg-red-500/10 text-red-500">
                                             <ShieldAlert size={16} />
                                         </div>
-                                        <span className="text-xs font-bold text-zinc-300">Adult Warning</span>
+                                        <span className="text-xs font-bold text-zinc-300">{t('bioEditor.settings.adultWarning')}</span>
                                     </div>
                                     <button
                                         onClick={() => setProfile({ ...profile, adultWarning: !profile.adultWarning })}
@@ -815,7 +828,7 @@ const BioLinkEditor = () => {
                                         <div className="p-2 rounded-lg bg-green-500/10 text-green-500">
                                             <Check size={16} />
                                         </div>
-                                        <span className="text-xs font-bold text-zinc-300">Verified Icon</span>
+                                        <span className="text-xs font-bold text-zinc-300">{t('bioEditor.settings.verifiedIcon')}</span>
                                     </div>
                                     <button
                                         onClick={() => setProfile({ ...profile, verifiedIcon: !profile.verifiedIcon })}
@@ -830,7 +843,7 @@ const BioLinkEditor = () => {
                                         <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
                                             <Share2 size={16} />
                                         </div>
-                                        <span className="text-xs font-bold text-zinc-300">Share Button</span>
+                                        <span className="text-xs font-bold text-zinc-300">{t('bioEditor.settings.shareButton')}</span>
                                     </div>
                                     <button
                                         onClick={() => setProfile({ ...profile, shareButton: !profile.shareButton })}
@@ -844,23 +857,38 @@ const BioLinkEditor = () => {
 
                         {/* Button Styles */}
                         <div className="h-px bg-white/5 mb-4 mt-6"></div>
-                        <label className="block text-xs font-bold text-zinc-500 mb-2">Button Style</label>
+                        <label className="block text-xs font-bold text-zinc-500 mb-2">{t('bioEditor.appearance.buttonStyle')}</label>
                         <div className="grid grid-cols-2 gap-2">
-                            {uiStyles.slice(0, 6).map((style) => (
-                                <button
-                                    key={style.id}
-                                    onClick={() => setProfile({ ...profile, uiStyle: style.id })}
-                                    className={`px-3 py-2 rounded-lg border text-xs font-medium text-left transition-all ${profile.uiStyle === style.id ? 'bg-blue-500/10 border-blue-500/50 text-blue-400' : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'}`}
-                                >
-                                    {style.name}
-                                </button>
-                            ))}
+                            {uiStyles.slice(0, 6).map((style) => {
+                                // Map style IDs to translation keys
+                                const translationKeyMap = {
+                                    'glassmorphism': 'glass',
+                                    'neumorphism': 'neuro',
+                                    'material': 'material',
+                                    'brutalist': 'brutal',
+                                    'gradient': 'gradient',
+                                    'neon': 'neon',
+                                    'minimal': 'minimal',
+                                    'retro': 'retro'
+                                };
+                                const translationKey = translationKeyMap[style.id] || style.id;
+
+                                return (
+                                    <button
+                                        key={style.id}
+                                        onClick={() => setProfile({ ...profile, uiStyle: style.id })}
+                                        className={`px-3 py-2 rounded-lg border text-xs font-medium text-left transition-all ${profile.uiStyle === style.id ? 'bg-blue-500/10 border-blue-500/50 text-blue-400' : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'}`}
+                                    >
+                                        {t(`bioEditor.uiStyles.${translationKey}`)}
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {/* Background Image */}
                         <div className="mt-6">
                             <ImageUploader
-                                label="Background Image"
+                                label={t('bioEditor.appearance.backgroundImage')}
                                 value={profile.backgroundImage}
                                 onChange={(val) => setProfile({ ...profile, backgroundImage: val })}
                                 bucket="bio-images"
@@ -869,12 +897,12 @@ const BioLinkEditor = () => {
                             {profile.backgroundImage && (
                                 <div className="mt-4 space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-zinc-500 mb-2 mt-4">Image Adjustments</label>
+                                        <label className="block text-xs font-bold text-zinc-500 mb-2 mt-4">{t('bioEditor.appearance.imageAdjustments')}</label>
                                         <div className="space-y-4">
                                             {/* Opacity Slider */}
                                             <div>
                                                 <div className="flex justify-between mb-1">
-                                                    <span className="text-[10px] uppercase font-bold text-zinc-400">Overlay Opacity</span>
+                                                    <span className="text-[10px] uppercase font-bold text-zinc-400">{t('bioEditor.appearance.overlayOpacity')}</span>
                                                     <span className="text-[10px] font-bold text-zinc-300">{profile.backgroundOpacity}%</span>
                                                 </div>
                                                 <input
@@ -890,7 +918,7 @@ const BioLinkEditor = () => {
                                             {/* Blur Slider */}
                                             <div>
                                                 <div className="flex justify-between mb-1">
-                                                    <span className="text-[10px] uppercase font-bold text-zinc-400">Blur Amount</span>
+                                                    <span className="text-[10px] uppercase font-bold text-zinc-400">{t('bioEditor.appearance.blurAmount')}</span>
                                                     <span className="text-[10px] font-bold text-zinc-300">{profile.backgroundBlur}px</span>
                                                 </div>
                                                 <input
@@ -921,7 +949,7 @@ const BioLinkEditor = () => {
                         disabled={saving}
                     >
                         {saving ? <Activity size={18} className="mr-2 animate-spin" /> : <Save size={18} className="mr-2" />}
-                        {saving ? 'Saving...' : 'Save Changes'}
+                        {saving ? t('bioEditor.saving') : t('bioEditor.buttons.save')}
                     </Button>
                 </div>
             </div>
@@ -972,12 +1000,12 @@ const BioLinkEditor = () => {
                             )}
 
                             {/* Adult Warning Overlay */}
-                            {profile.adultWarning && (
+                            {showAdultWarning && (
                                 <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center animate-fade-in">
                                     <AlertTriangle size={48} className="text-red-500 mb-4" />
-                                    <h3 className="text-xl font-black text-white mb-2 uppercase">Sensitive Content</h3>
-                                    <p className="text-xs text-zinc-400 mb-6 font-medium">This page may contain content that is not suitable for all audiences.</p>
-                                    <button className="px-6 py-3 bg-red-500 text-white font-bold rounded-lg text-xs uppercase tracking-widest hover:bg-red-600 transition-colors w-full">I am 18+</button>
+                                    <h3 className="text-xl font-black text-white mb-2 uppercase">{t('bioEditor.preview.adultWarning.title')}</h3>
+                                    <p className="text-xs text-zinc-400 mb-6 font-medium">{t('bioEditor.preview.adultWarning.description')}</p>
+                                    <button onClick={() => setShowAdultWarning(false)} className="px-6 py-3 bg-red-500 text-white font-bold rounded-lg text-xs uppercase tracking-widest hover:bg-red-600 transition-colors w-full">{t('bioEditor.preview.adultWarning.button')}</button>
                                 </div>
                             )}
 
@@ -1048,12 +1076,12 @@ const BioLinkEditor = () => {
                                 </div>
 
                                 {/* Cookie Consent Banner */}
-                                {profile.cookieConsent && (
+                                {showCookieConsent && (
                                     <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl p-3 rounded-xl border border-white/20 shadow-lg animate-fade-in-up z-40 text-left flex items-center justify-between gap-3">
                                         <div className="flex-1">
-                                            <p className="text-[9px] font-bold text-black leading-tight">We use cookies to ensure you get the best experience on our website.</p>
+                                            <p className="text-[9px] font-bold text-black leading-tight">{t('bioEditor.preview.cookieConsent.text')}</p>
                                         </div>
-                                        <button className="px-3 py-1.5 bg-black text-white text-[9px] font-bold rounded-lg whitespace-nowrap">Got it!</button>
+                                        <button onClick={() => setShowCookieConsent(false)} className="px-3 py-1.5 bg-black text-white text-[9px] font-bold rounded-lg whitespace-nowrap">{t('bioEditor.preview.cookieConsent.button')}</button>
                                     </div>
                                 )}
                             </div>

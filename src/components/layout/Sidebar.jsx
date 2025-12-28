@@ -10,13 +10,16 @@ import {
     Zap,
     ShieldCheck,
     Cpu,
-    Network
+    Network,
+    Languages
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
     const navigate = useNavigate();
     const { signOut, user } = useAuth();
+    const { t, i18n } = useTranslation();
 
     const handleLogout = async () => {
         const { error } = await signOut();
@@ -26,31 +29,35 @@ const Sidebar = () => {
             navigate('/login');
         }
     };
+
+    const toggleLanguage = () => {
+        const newLang = i18n.language === 'en' ? 'tr' : 'en';
+        i18n.changeLanguage(newLang);
+    };
     const links = [
-        { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
-        { icon: Cpu, label: 'My Links', path: '/links' },
-        { icon: UserCircle, label: 'Bio Page', path: '/bio' },
-        { icon: Network, label: 'Analytics', path: '/analytics' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+        { icon: LayoutDashboard, label: t('sidebar.menu.overview'), path: '/dashboard' },
+        { icon: Cpu, label: t('sidebar.menu.myLinks'), path: '/links' },
+        { icon: UserCircle, label: t('sidebar.menu.bioPage'), path: '/bio' },
+        { icon: Network, label: t('sidebar.menu.analytics'), path: '/analytics' },
+        { icon: Settings, label: t('sidebar.menu.settings'), path: '/settings' },
     ];
 
     return (
         <aside className="w-[300px] bg-[#08090D] border-r border-white/5 h-screen flex flex-col fixed left-0 top-0 z-50">
             <div className="p-10 mb-8">
                 <div className="flex items-center gap-4 group cursor-pointer">
-                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/30 group-hover:scale-105 transition-all duration-500">
+                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
                         <Zap size={28} className="text-white fill-current" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-3xl font-black tracking-tighter font-heading text-white italic">LENK.tr</span>
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500/60">SIMPLE LINK MANAGEMENT</span>
+                        <span className="text-3xl font-black tracking-tighter font-heading text-white">lenk.tr</span>
                     </div>
                 </div>
             </div>
 
             <nav className="flex-1 px-8 space-y-4">
                 <div className="px-4 mb-6">
-                    <span className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-700">DASHBOARD</span>
+                    <span className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-700">{t('sidebar.sectionTitle')}</span>
                 </div>
                 {links.map((link) => (
                     <NavLink
@@ -77,20 +84,31 @@ const Sidebar = () => {
             </nav>
 
             <div className="p-8 m-6 mt-auto rounded-[32px] bg-white/[0.02] border border-white/5 space-y-6">
+                {/* Language Switcher */}
+                <button
+                    onClick={toggleLanguage}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
+                >
+                    <Languages size={16} className="text-blue-500" />
+                    <span className="text-xs font-black uppercase tracking-widest text-white">
+                        {i18n.language === 'en' ? 'TR' : 'EN'}
+                    </span>
+                </button>
+
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-2xl bg-blue-600/20 flex items-center justify-center text-blue-500 border border-blue-500/20">
                         <ShieldCheck size={20} />
                     </div>
                     <div>
-                        <p className="text-sm font-black text-white leading-none mb-2 italic tracking-tighter uppercase">System Status</p>
-                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest leading-none">Active</p>
+                        <p className="text-sm font-black text-white leading-none mb-2 italic tracking-tighter uppercase">{t('sidebar.systemStatus.title')}</p>
+                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest leading-none">{t('sidebar.systemStatus.active')}</p>
                     </div>
                 </div>
                 <button
                     onClick={() => navigate('/upgrade')}
                     className="w-full py-4 rounded-2xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 hover:bg-blue-500 transition-all"
                 >
-                    Upgrade Plan
+                    {t('sidebar.upgradePlan')}
                 </button>
             </div>
 
@@ -113,7 +131,7 @@ const Sidebar = () => {
                     </div>
                     <div className="flex-1 text-left min-w-0">
                         <p className="text-sm font-bold text-white leading-none mb-1 truncate">{user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}</p>
-                        <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest leading-none truncate">{user?.user_metadata?.role || 'Operator'}</p>
+                        <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest leading-none truncate">{user?.user_metadata?.role || t('sidebar.userMenu.defaultRole')}</p>
                     </div>
                     <div className="relative">
                         <div className="w-2 h-2 bg-red-500 rounded-full absolute -top-1 -right-1 border border-[#08090D]"></div>
@@ -124,11 +142,11 @@ const Sidebar = () => {
                 {/* User Menu Dropdown */}
                 <div id="user-menu" className="hidden absolute bottom-full left-6 right-6 mb-2 bg-[#0D0F14] border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-2 animate-fade-in-up origin-bottom">
                     <button onClick={() => navigate('/settings?tab=profile')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm font-medium">
-                        <UserCircle size={16} /> Profile Settings
+                        <UserCircle size={16} /> {t('sidebar.userMenu.profileSettings')}
                     </button>
                     <button onClick={() => navigate('/settings?tab=notifications')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm font-medium justify-between">
                         <div className="flex items-center gap-3">
-                            <Zap size={16} /> Notifications
+                            <Zap size={16} /> {t('sidebar.userMenu.notifications')}
                         </div>
                         <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md">2</span>
                     </button>
@@ -137,7 +155,7 @@ const Sidebar = () => {
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all text-sm font-medium"
                     >
-                        <LogOut size={16} /> Log Out
+                        <LogOut size={16} /> {t('sidebar.userMenu.logout')}
                     </button>
                 </div>
             </div>

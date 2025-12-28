@@ -18,16 +18,20 @@ import {
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import Toast from '../components/ui/Toast';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import BoostOverlay from '../components/overlays/BoostOverlay';
 import StatsOverlay from '../components/overlays/StatsOverlay';
 import EditLinkOverlay from '../components/overlays/EditLinkOverlay';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '../utils/supabase/client';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const supabase = createClient();
 
 const ShortLinkManager = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { user } = useAuth();
     const [activeOverlay, setActiveOverlay] = React.useState({ type: null, link: null });
@@ -36,6 +40,8 @@ const ShortLinkManager = () => {
     const [error, setError] = React.useState(null);
     const [filterStatus, setFilterStatus] = React.useState('all'); // all, active, archived
     const [showFilterMenu, setShowFilterMenu] = React.useState(false);
+    const [toast, setToast] = React.useState(null);
+    const [deleteConfirm, setDeleteConfirm] = React.useState(null);
 
     const fetchLinks = React.useCallback(async () => {
         setLoading(true);
@@ -61,8 +67,6 @@ const ShortLinkManager = () => {
     }, [fetchLinks]);
 
     const deleteLink = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this link?')) return;
-
         try {
             const { error } = await supabase
                 .from('links')
@@ -71,8 +75,11 @@ const ShortLinkManager = () => {
 
             if (error) throw error;
             setLinks(links.filter(link => link.id !== id));
+            setToast({ message: '🗑️ ' + t('common.notifications.deleteSuccess'), type: 'success' });
+            setTimeout(() => setToast(null), 3000);
         } catch (err) {
-            alert('Error deleting link: ' + err.message);
+            setToast({ message: 'Error: ' + err.message, type: 'error' });
+            setTimeout(() => setToast(null), 4000);
         }
     };
 
@@ -113,12 +120,37 @@ const ShortLinkManager = () => {
 
     return (
         <div className="space-y-10 animate-fade-in font-sans pb-20">
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {deleteConfirm && (
+                <ConfirmDialog
+                    title={t('linksPage.deleteConfirmTitle')}
+                    message={t('linksPage.deleteConfirmMessage', { title: deleteConfirm.title || 'this link' })}
+                    confirmText={t('linksPage.delete')}
+                    cancelText={t('common.confirm.cancel')}
+                    variant="danger"
+                    onConfirm={() => {
+                        deleteLink(deleteConfirm.id);
+                        setDeleteConfirm(null);
+                    }}
+                    onCancel={() => setDeleteConfirm(null)}
+                />
+            )}
+
             {/* Header / Command Center */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-b border-white/5 pb-10">
                 <div className="space-y-2">
-                    <Badge variant="primary" className="mb-2">Link Manager</Badge>
-                    <h1 className="text-4xl font-extrabold tracking-tighter text-white font-heading underline decoration-blue-500/30 decoration-4 underline-offset-8">My Links</h1>
-                    <p className="text-zinc-500 font-medium max-w-xl">Manage and track your shortened links in one place.</p>
+                    <Badge variant="primary" className="mb-2">{t('linksPage.badge')}</Badge>
+                    <h1 className="text-4xl font-extrabold tracking-tighter text-white font-heading underline decoration-blue-500/30 decoration-4 underline-offset-8">{t('linksPage.title')}</h1>
+                    <p className="text-zinc-500 font-medium max-w-xl">{t('linksPage.subtitle')}</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="relative">
@@ -127,7 +159,7 @@ const ShortLinkManager = () => {
                             size="md"
                             onClick={() => setShowFilterMenu(!showFilterMenu)}
                         >
-                            <Filter size={16} className="mr-2" /> Global Filter
+                            <Filter size={16} className="mr-2" /> {t('linksPage.globalFilter')}
                         </Button>
 
                         {/* Filter Dropdown */}
@@ -139,19 +171,19 @@ const ShortLinkManager = () => {
                                         onClick={() => { setFilterStatus('all'); setShowFilterMenu(false); }}
                                         className={`w-full text-left px-4 py-2.5 text-xs font-bold ${filterStatus === 'all' ? 'text-white bg-blue-600/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'} transition-colors`}
                                     >
-                                        All Links
+                                        {t('linksPage.allLinks')}
                                     </button>
                                     <button
                                         onClick={() => { setFilterStatus('active'); setShowFilterMenu(false); }}
                                         className={`w-full text-left px-4 py-2.5 text-xs font-bold ${filterStatus === 'active' ? 'text-white bg-blue-600/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'} transition-colors`}
                                     >
-                                        Active Only
+                                        {t('linksPage.activeOnly')}
                                     </button>
                                     <button
                                         onClick={() => { setFilterStatus('archived'); setShowFilterMenu(false); }}
                                         className={`w-full text-left px-4 py-2.5 text-xs font-bold ${filterStatus === 'archived' ? 'text-white bg-blue-600/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'} transition-colors`}
                                     >
-                                        Archived Only
+                                        {t('linksPage.archivedOnly')}
                                     </button>
                                 </div>
                             </>
@@ -163,7 +195,7 @@ const ShortLinkManager = () => {
                         glow
                         onClick={() => openOverlay('edit', null)}
                     >
-                        <Plus size={18} className="mr-2" /> Create Link
+                        <Plus size={18} className="mr-2" /> {t('linksPage.createLink')}
                     </Button>
                 </div>
             </div>
@@ -176,7 +208,7 @@ const ShortLinkManager = () => {
                     </div>
                     <input
                         type="text"
-                        placeholder="Search by link name or URL..."
+                        placeholder={t('linksPage.searchPlaceholder')}
                         className="w-full bg-zinc-900/30 border border-white/5 rounded-2xl pl-14 pr-6 py-4 text-base text-white placeholder:text-zinc-700 focus:outline-none focus:border-blue-500/40 focus:bg-zinc-900/50 transition-all shadow-inner"
                     />
                 </div>
@@ -195,7 +227,7 @@ const ShortLinkManager = () => {
                         className="flex-1 px-4 py-4 rounded-2xl bg-zinc-900/20 border border-dashed border-white/10 flex items-center justify-center gap-3 text-zinc-600 cursor-pointer hover:border-blue-500/30 hover:text-blue-500 transition-all"
                     >
                         <Share2 size={18} />
-                        <span className="text-sm font-bold uppercase tracking-widest">Share Links</span>
+                        <span className="text-sm font-bold uppercase tracking-widest">{t('linksPage.shareLinks')}</span>
                     </div>
                 </div>
             </div>
@@ -203,17 +235,17 @@ const ShortLinkManager = () => {
             {/* Main Links Table */}
             <div className="space-y-4">
                 <div className="px-6 hidden md:grid grid-cols-12 gap-8 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-600 border-b border-white/5 pb-4">
-                    <div className="col-span-6">Short Link / Destination</div>
-                    <div className="col-span-2 text-center">Analytics</div>
-                    <div className="col-span-2 text-center">Created</div>
-                    <div className="col-span-2 text-right">Status</div>
+                    <div className="col-span-6">{t('linksPage.tableHeaders.shortLink')}</div>
+                    <div className="col-span-2 text-center">{t('linksPage.tableHeaders.analytics')}</div>
+                    <div className="col-span-2 text-center">{t('linksPage.tableHeaders.created')}</div>
+                    <div className="col-span-2 text-right">{t('linksPage.tableHeaders.status')}</div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
                     {loading ? (
                         <div className="p-20 text-center space-y-4">
                             <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
-                            <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">Accessing Database...</p>
+                            <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">{t('linksPage.loading')}</p>
                         </div>
                     ) : links.filter(link => {
                         if (filterStatus === 'active') return !link.is_archived;
@@ -224,10 +256,10 @@ const ShortLinkManager = () => {
                             <div className="w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-6 text-zinc-700">
                                 <Link2 size={32} />
                             </div>
-                            <h3 className="text-white font-bold mb-2">No links found</h3>
-                            <p className="text-zinc-600 text-sm mb-8">Deploy your first shortened node to start tracking.</p>
+                            <h3 className="text-white font-bold mb-2">{t('linksPage.noLinksTitle')}</h3>
+                            <p className="text-zinc-600 text-sm mb-8">{t('linksPage.noLinksDesc')}</p>
                             <Button variant="primary" size="md" onClick={() => openOverlay('edit', null)}>
-                                <Plus size={16} className="mr-2" /> Create First Link
+                                <Plus size={16} className="mr-2" /> {t('linksPage.createFirst')}
                             </Button>
                         </div>
                     ) : (
@@ -247,7 +279,7 @@ const ShortLinkManager = () => {
                                             <div className="flex items-center gap-3">
                                                 <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate">{link.title || 'Untitled Link'}</h3>
                                                 <div className="flex md:hidden">
-                                                    <Badge variant={!link.is_archived ? 'success' : 'primary'} className="scale-75 origin-left">{!link.is_archived ? 'Active' : 'Archived'}</Badge>
+                                                    <Badge variant={!link.is_archived ? 'success' : 'primary'} className="scale-75 origin-left">{!link.is_archived ? t('linksPage.statusActive') : t('linksPage.statusArchived')}</Badge>
                                                 </div>
                                             </div>
                                             <div className="flex flex-wrap items-center gap-3 text-xs">
@@ -264,7 +296,7 @@ const ShortLinkManager = () => {
                                             <MousePointer2 size={14} className="text-lime-500" />
                                             {link.clicks || 0}
                                         </div>
-                                        <span className="text-[9px] font-black text-zinc-700 uppercase tracking-tighter mt-1 group-hover/stats:text-blue-500/60 transition-colors">View Stats</span>
+                                        <span className="text-[9px] font-black text-zinc-700 uppercase tracking-tighter mt-1 group-hover/stats:text-blue-500/60 transition-colors">{t('linksPage.viewStats')}</span>
                                     </div>
 
                                     {/* Date */}
@@ -278,13 +310,13 @@ const ShortLinkManager = () => {
                                     {/* Status & Actions */}
                                     <div className="md:col-span-2 flex items-center justify-end gap-4">
                                         <div className="hidden md:flex flex-col items-end gap-1">
-                                            <Badge variant={!link.is_archived ? 'success' : 'primary'}>{!link.is_archived ? 'Active' : 'Archived'}</Badge>
+                                            <Badge variant={!link.is_archived ? 'success' : 'primary'}>{!link.is_archived ? t('linksPage.statusActive') : t('linksPage.statusArchived')}</Badge>
                                         </div>
                                         <div className="flex items-center gap-2 relative">
                                             <button
                                                 onClick={() => {
                                                     navigator.clipboard.writeText(`https://lenk.tr/${link.short_slug}`);
-                                                    alert('Copied to clipboard!');
+                                                    alert(t('common.notifications.copied'));
                                                 }}
                                                 className="p-2.5 hover:bg-white/5 rounded-lg text-zinc-600 hover:text-white transition-all"
                                                 title="Copy Link"
@@ -304,20 +336,23 @@ const ShortLinkManager = () => {
                                                                 onClick={() => openOverlay('edit', link)}
                                                                 className="w-full text-left px-3 py-2 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                                                             >
-                                                                Edit Link
+                                                                {t('linksPage.editLink')}
                                                             </button>
                                                             <button
                                                                 onClick={() => toggleArchive(link.id, link.is_archived)}
                                                                 className="w-full text-left px-3 py-2 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                                                             >
-                                                                {link.is_archived ? 'Unarchive' : 'Archive'}
+                                                                {link.is_archived ? t('linksPage.unarchive') : t('linksPage.archive')}
                                                             </button>
                                                             <div className="h-px bg-white/5 my-1"></div>
                                                             <button
-                                                                onClick={() => deleteLink(link.id)}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setDeleteConfirm({ id: link.id, title: link.title });
+                                                                }}
                                                                 className="w-full text-left px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                                             >
-                                                                Delete
+                                                                {t('linksPage.delete')}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -336,20 +371,20 @@ const ShortLinkManager = () => {
                                             rel="noopener noreferrer"
                                             className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-blue-500 flex items-center gap-2 transition-colors"
                                         >
-                                            <ExternalLink size={12} /> Visit Link
+                                            <ExternalLink size={12} /> {t('linksPage.visitLink')}
                                         </a>
                                         <button
                                             onClick={() => openOverlay('boost', link)}
                                             className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white flex items-center gap-2 transition-colors"
                                         >
-                                            <Zap size={12} /> Boost
+                                            <Zap size={12} /> {t('linksPage.boost')}
                                         </button>
                                     </div>
                                     <button
                                         onClick={() => navigate('/analytics')}
                                         className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white flex items-center gap-1 transition-colors"
                                     >
-                                        Full Stats <ChevronRight size={12} className="text-blue-500" />
+                                        {t('linksPage.fullStats')} <ChevronRight size={12} className="text-blue-500" />
                                     </button>
                                 </div>
                             </div>

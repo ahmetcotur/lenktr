@@ -6,6 +6,7 @@ import {
     Twitter, Instagram, Linkedin, Send, Slack,
     Layout, Link2, Copy, Trash2, Check, Loader2
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import { createClient } from '../../utils/supabase/client';
@@ -15,6 +16,7 @@ const supabase = createClient();
 
 const EditLinkOverlay = ({ link, onClose }) => {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         destinationUrl: link?.original_url || '',
@@ -33,7 +35,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
 
     const handleSave = async () => {
         if (!formData.destinationUrl) {
-            alert('Please enter a destination URL');
+            alert(t('editLink.errorUrl'));
             return;
         }
 
@@ -65,7 +67,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
             if (error) throw error;
             onClose();
         } catch (err) {
-            alert('Error saving link: ' + err.message);
+            alert(t('editLink.errorSave') + err.message);
         } finally {
             setLoading(false);
         }
@@ -80,14 +82,14 @@ const EditLinkOverlay = ({ link, onClose }) => {
 
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-[#0D0F14] z-10">
-                    <h2 className="text-lg font-black text-white">{link ? 'Update node.' : 'Short it.'}</h2>
+                    <h2 className="text-lg font-black text-white">{link ? t('editLink.titleUpdate') : t('editLink.titleShort')}</h2>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={handleSave}
                             disabled={loading}
                             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {loading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save
+                            {loading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {t('editLink.save')}
                         </button>
                         <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-colors">
                             <X size={18} />
@@ -101,7 +103,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                     {/* Destination URL */}
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-400">Destination URL</label>
+                            <label className="text-xs font-bold text-zinc-400">{t('editLink.destinationUrl')}</label>
                             <input
                                 type="text"
                                 placeholder="https://example.com/very-long-url-that-needs-shortening"
@@ -113,17 +115,17 @@ const EditLinkOverlay = ({ link, onClose }) => {
 
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-400">Title</label>
+                                <label className="text-xs font-bold text-zinc-400">{t('editLink.title')}</label>
                                 <input
                                     type="text"
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="Campaign or Project Name"
+                                    placeholder={t('editLink.campaignPlaceholder')}
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-500/50 focus:outline-none transition-all"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-400">Custom Slug</label>
+                                <label className="text-xs font-bold text-zinc-400">{t('editLink.customSlug')}</label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600 text-xs font-mono">
                                         lenk.tr/
@@ -142,26 +144,29 @@ const EditLinkOverlay = ({ link, onClose }) => {
                     {/* Pixels & UTMs */}
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-400">Attach pixels</label>
+                            <label className="text-xs font-bold text-zinc-400">{t('editLink.attachPixels')}</label>
                             <button className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
-                                <Plus size={14} /> ADD PIXEL
+                                <Plus size={14} /> {t('editLink.addPixel')}
                             </button>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-400">UTM Parameters</label>
+                            <label className="text-xs font-bold text-zinc-400">{t('editLink.utmParams')}</label>
                             <button className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
-                                <Plus size={14} /> Add UTM
+                                <Plus size={14} /> {t('editLink.addUtm')}
                             </button>
                         </div>
                     </div>
 
                     {/* Social Preview */}
                     <div className="space-y-4">
-                        <label className="text-xs font-bold text-zinc-400">Customize social preview</label>
+                        <label className="text-xs font-bold text-zinc-400">{t('editLink.socialPreview')}</label>
                         <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex gap-3 text-yellow-500">
                             <Share2 size={16} className="shrink-0 mt-0.5" />
                             <p className="text-[10px] font-medium leading-relaxed">
-                                Click on network to change the preview & titles of your link when shared on it, or use <span className="font-bold underline cursor-pointer">default</span> to change it for all
+                                {t('editLink.socialPreviewDesc', {
+                                    defaultValue: 'Click on network to change the preview & titles of your link when shared on it, or use <1>default</1> to change it for all',
+                                    components: [<span className="font-bold underline cursor-pointer" key="default-link" />]
+                                })}
                             </p>
                         </div>
 
@@ -189,10 +194,10 @@ const EditLinkOverlay = ({ link, onClose }) => {
 
                     {/* Custom Redirections */}
                     <div className="bg-white/5 rounded-2xl p-4 space-y-4 border border-white/5">
-                        <label className="text-xs font-bold text-zinc-400 block mb-2">Custom redirections and deep links</label>
+                        <label className="text-xs font-bold text-zinc-400 block mb-2">{t('editLink.customRedirections')}</label>
                         <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-zinc-500">Target country</label>
+                                <label className="text-[10px] font-bold text-zinc-500">{t('editLink.targetCountry')}</label>
                                 <div className="relative">
                                     <select className="w-full bg-[#0D0F14] border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 appearance-none focus:outline-none">
                                         <option>All</option>
@@ -204,7 +209,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-zinc-500">Target OS</label>
+                                <label className="text-[10px] font-bold text-zinc-500">{t('editLink.targetOs')}</label>
                                 <div className="relative">
                                     <select className="w-full bg-[#0D0F14] border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 appearance-none focus:outline-none">
                                         <option>All</option>
@@ -217,7 +222,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-zinc-500">Browser</label>
+                                <label className="text-[10px] font-bold text-zinc-500">{t('editLink.browser')}</label>
                                 <div className="relative">
                                     <select className="w-full bg-[#0D0F14] border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 appearance-none focus:outline-none">
                                         <option>All</option>
@@ -231,7 +236,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-zinc-500">Redirection URL for this targets</label>
+                            <label className="text-[10px] font-bold text-zinc-500">{t('editLink.redirectionUrl')}</label>
                             <div className="flex gap-2">
                                 <input
                                     type="text"
@@ -239,19 +244,19 @@ const EditLinkOverlay = ({ link, onClose }) => {
                                     className="flex-1 bg-white border border-white/10 rounded-lg px-3 py-2 text-xs text-black placeholder:text-zinc-500 focus:outline-none"
                                 />
                                 <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap">
-                                    Save target
+                                    {t('editLink.saveTarget')}
                                 </button>
                             </div>
                         </div>
 
                         <div className="py-8 text-center border border-dashed border-white/10 rounded-xl bg-[#0D0F14]/50">
-                            <p className="text-xs text-zinc-600 font-medium">No targets yet</p>
+                            <p className="text-xs text-zinc-600 font-medium">{t('editLink.noTargets')}</p>
                         </div>
                     </div>
 
                     {/* Cloaking & CTA Banner */}
                     <div className="space-y-6">
-                        <label className="text-xs font-bold text-zinc-400">Cloaking / Hide URL & show CTA banner</label>
+                        <label className="text-xs font-bold text-zinc-400">{t('editLink.cloakingTitle')}</label>
 
                         {/* Toggles */}
                         <div className="flex items-center gap-4">
@@ -263,7 +268,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                                     {formData.cloaking && <Check size={14} className="text-white" />}
                                 </button>
                                 <span className="text-sm text-white font-medium cursor-pointer select-none" onClick={() => setFormData({ ...formData, cloaking: !formData.cloaking })}>
-                                    Enable cloaking/CTA
+                                    {t('editLink.enableCloaking')}
                                 </span>
                             </div>
 
@@ -278,7 +283,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                                             {formData.showCtaBanner && <Check size={14} className="text-white" />}
                                         </button>
                                         <span className="text-sm text-white font-medium cursor-pointer select-none" onClick={() => setFormData({ ...formData, showCtaBanner: !formData.showCtaBanner })}>
-                                            Show CTA banner
+                                            {t('editLink.showCta')}
                                         </span>
                                     </div>
                                 </>
@@ -288,12 +293,12 @@ const EditLinkOverlay = ({ link, onClose }) => {
                         {/* CTA Banner Customization Panel */}
                         {formData.cloaking && formData.showCtaBanner && (
                             <div className="bg-[#0D0F14] border border-white/5 rounded-xl p-6 space-y-6">
-                                <h3 className="text-sm font-bold text-white border-b border-white/5 pb-4">Customize CTA banner</h3>
+                                <h3 className="text-sm font-bold text-white border-b border-white/5 pb-4">{t('editLink.customizeCta')}</h3>
 
                                 <div className="grid grid-cols-12 gap-6">
                                     {/* Logo */}
                                     <div className="col-span-3 space-y-2">
-                                        <label className="text-xs font-bold text-zinc-400">Banner logo</label>
+                                        <label className="text-xs font-bold text-zinc-400">{t('editLink.bannerLogo')}</label>
                                         <div className="aspect-[4/3] bg-white/5 border border-dashed border-white/10 rounded-lg flex items-center justify-center cursor-pointer hover:border-white/30 transition-colors group">
                                             {formData.ctaBanner.logo ? (
                                                 <img src={formData.ctaBanner.logo} alt="Logo" className="w-full h-full object-contain p-2" />
@@ -309,7 +314,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
 
                                     {/* Text */}
                                     <div className="col-span-9 space-y-2">
-                                        <label className="text-xs font-bold text-zinc-400">Banner text to display</label>
+                                        <label className="text-xs font-bold text-zinc-400">{t('editLink.bannerText')}</label>
                                         <input
                                             type="text"
                                             value={formData.ctaBanner.text}
@@ -325,7 +330,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
 
                                 {/* Redirection URL */}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-400">Banner redirection url</label>
+                                    <label className="text-xs font-bold text-zinc-400">{t('editLink.bannerRedirection')}</label>
                                     <input
                                         type="text"
                                         value={formData.ctaBanner.url}
@@ -341,7 +346,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                                 {/* Colors */}
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-zinc-400">Banner Background color</label>
+                                        <label className="text-xs font-bold text-zinc-400">{t('editLink.bannerBg')}</label>
                                         <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-2 py-2">
                                             <input
                                                 type="text"
@@ -366,7 +371,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-zinc-400">Banner text color</label>
+                                        <label className="text-xs font-bold text-zinc-400">{t('editLink.bannerTextColor')}</label>
                                         <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-2 py-2">
                                             <input
                                                 type="text"
@@ -394,7 +399,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
 
                                 {/* Banner Position */}
                                 <div className="space-y-3">
-                                    <label className="text-xs font-bold text-zinc-400">Banner position</label>
+                                    <label className="text-xs font-bold text-zinc-400">{t('editLink.bannerPosition')}</label>
                                     <div className="flex gap-4 overflow-x-auto pb-2">
                                         {/* Bottom Right */}
                                         <div
@@ -412,7 +417,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className="text-[10px] font-bold text-zinc-500 group-hover:text-zinc-300 block text-center">Bottom right<br />banner</span>
+                                            <span className="text-[10px] font-bold text-zinc-500 group-hover:text-zinc-300 block text-center">{t('editLink.posBottomRight')}</span>
                                         </div>
 
                                         {/* Top Header */}
@@ -431,7 +436,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className="text-[10px] font-bold text-zinc-500 group-hover:text-zinc-300 block text-center">Top Header</span>
+                                            <span className="text-[10px] font-bold text-zinc-500 group-hover:text-zinc-300 block text-center">{t('editLink.posTopHeader')}</span>
                                         </div>
 
                                         {/* Bottom Left */}
@@ -450,7 +455,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className="text-[10px] font-bold text-zinc-500 group-hover:text-zinc-300 block text-center">Bottom Left<br />pop</span>
+                                            <span className="text-[10px] font-bold text-zinc-500 group-hover:text-zinc-300 block text-center">{t('editLink.posBottomLeft')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -461,15 +466,15 @@ const EditLinkOverlay = ({ link, onClose }) => {
                     {/* Scheduling */}
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-400">Scheduling date (UTC)</label>
+                            <label className="text-xs font-bold text-zinc-400">{t('editLink.schedulingDate')}</label>
                             <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-500">
-                                None
+                                {t('editLink.none')}
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-400">Expiration date (UTC)</label>
+                            <label className="text-xs font-bold text-zinc-400">{t('editLink.expirationDate')}</label>
                             <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-500">
-                                None
+                                {t('editLink.none')}
                             </div>
                         </div>
                     </div>
@@ -477,7 +482,7 @@ const EditLinkOverlay = ({ link, onClose }) => {
                     {/* Password & Folder */}
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-400">Password protection</label>
+                            <label className="text-xs font-bold text-zinc-400">{t('editLink.passwordProtection')}</label>
                             <input
                                 type="text"
                                 placeholder="No password"
@@ -485,10 +490,10 @@ const EditLinkOverlay = ({ link, onClose }) => {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-400">Folder</label>
+                            <label className="text-xs font-bold text-zinc-400">{t('editLink.folder')}</label>
                             <div className="relative">
                                 <select className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-400 appearance-none focus:outline-none focus:border-blue-500/50 transition-all">
-                                    <option>Select Folder</option>
+                                    <option>{t('editLink.selectFolder')}</option>
                                     <option>Marketing</option>
                                     <option>Personal</option>
                                 </select>

@@ -19,10 +19,12 @@ import Badge from '../components/ui/Badge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { createClient } from '../utils/supabase/client';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const supabase = createClient();
 
 const BioPagesList = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { user } = useAuth();
     const [bioPages, setBioPages] = React.useState([]);
@@ -98,7 +100,7 @@ const BioPagesList = () => {
     const copyUrl = (slug) => {
         const url = `${window.location.origin}/${slug}`;
         navigator.clipboard.writeText(url);
-        alert('URL copied to clipboard!');
+        alert(t('common.notifications.copied'));
     };
 
     return (
@@ -106,10 +108,10 @@ const BioPagesList = () => {
             {/* Delete Confirmation Modal */}
             {deleteConfirm && (
                 <ConfirmDialog
-                    title="Delete Bio Page?"
-                    message="Are you sure you want to delete this bio page? This action cannot be undone and all data will be permanently lost."
-                    confirmText="Delete Page"
-                    cancelText="Cancel"
+                    title={t('bioPages.deleteConfirmTitle')}
+                    message={t('bioPages.deleteConfirmMessage')}
+                    confirmText={t('bioPages.deleteButton')}
+                    cancelText={t('bioPages.cancelButton')}
                     variant="danger"
                     onConfirm={() => deletePage(deleteConfirm)}
                     onCancel={() => setDeleteConfirm(null)}
@@ -119,12 +121,12 @@ const BioPagesList = () => {
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-b border-white/5 pb-10">
                 <div className="space-y-2">
-                    <Badge variant="primary" className="mb-2">Bio Pages</Badge>
-                    <h1 className="text-4xl font-extrabold tracking-tighter text-white font-heading">My Pages</h1>
-                    <p className="text-zinc-500 font-medium max-w-xl">Create and manage your personal landing pages.</p>
+                    <Badge variant="primary" className="mb-2">{t('bioPages.badge')}</Badge>
+                    <h1 className="text-4xl font-extrabold tracking-tighter text-white font-heading">{t('bioPages.title')}</h1>
+                    <p className="text-zinc-500 font-medium max-w-xl">{t('bioPages.subtitle')}</p>
                 </div>
                 <Button variant="primary" size="lg" glow onClick={() => navigate('/bio/editor')}>
-                    <Plus size={18} className="mr-2" /> Create New Page
+                    <Plus size={18} className="mr-2" /> {t('bioPages.createNew')}
                 </Button>
             </div>
 
@@ -133,8 +135,7 @@ const BioPagesList = () => {
                 {loading ? (
                     <div className="col-span-full p-20 text-center space-y-4">
                         <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
-                        <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">Accessing Database...</p>
-                        <p className="text-zinc-700 text-xs">User: {user ? 'Authenticated' : 'Not authenticated'}</p>
+                        <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">{t('bioPages.loading')}</p>
                     </div>
                 ) : error ? (
                     <div className="col-span-full p-20 text-center border border-dashed border-red-500/20 rounded-3xl bg-red-500/5">
@@ -152,10 +153,10 @@ const BioPagesList = () => {
                         <div className="w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-6 text-zinc-700">
                             <Layout size={32} />
                         </div>
-                        <h3 className="text-white font-bold mb-2">No bio pages found</h3>
-                        <p className="text-zinc-600 text-sm mb-8">Create your first highly customizable bio landing page.</p>
+                        <h3 className="text-white font-bold mb-2">{t('bioPages.noPagesTitle')}</h3>
+                        <p className="text-zinc-600 text-sm mb-8">{t('bioPages.noPagesDesc')}</p>
                         <Button variant="primary" size="md" onClick={() => navigate('/bio/editor')}>
-                            <Plus size={16} className="mr-2" /> Create First Page
+                            <Plus size={16} className="mr-2" /> {t('bioPages.createFirst')}
                         </Button>
                     </div>
                 ) : bioPages.map((page) => (
@@ -182,7 +183,7 @@ const BioPagesList = () => {
                                     onClick={() => navigate(`/bio/editor?id=${page.id}`)} // Pass ID
                                     className="shadow-xl"
                                 >
-                                    <Edit3 size={14} className="mr-2" /> Edit Design
+                                    <Edit3 size={14} className="mr-2" /> {t('bioPages.editDesign')}
                                 </Button>
                                 <Button variant="secondary" size="sm" className="bg-black/50 border border-white/10 text-white hover:bg-black/70">
                                     <Eye size={14} />
@@ -192,7 +193,7 @@ const BioPagesList = () => {
                             {/* Status Badge */}
                             <div className="absolute top-4 right-4">
                                 <Badge variant={page.is_published ? 'success' : 'primary'} className="shadow-lg backdrop-blur-md bg-black/50 border-white/10">
-                                    {page.is_published ? 'Active' : 'Draft'}
+                                    {page.is_published ? t('bioPages.statusActive') : t('bioPages.statusDraft')}
                                 </Badge>
                             </div>
                         </div>
@@ -226,19 +227,19 @@ const BioPagesList = () => {
                                                     onClick={() => navigate(`/bio/editor?id=${page.id}`)}
                                                     className="w-full text-left px-4 py-2.5 text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/5 flex items-center gap-3 transition-colors"
                                                 >
-                                                    <Edit3 size={14} /> Edit Design
+                                                    <Edit3 size={14} /> {t('bioPages.editDesign')}
                                                 </button>
                                                 <button
                                                     onClick={() => copyUrl(page.slug)}
                                                     className="w-full text-left px-4 py-2.5 text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/5 flex items-center gap-3 transition-colors"
                                                 >
-                                                    <Copy size={14} /> Copy URL
+                                                    <Copy size={14} /> {t('bioPages.copyUrl')}
                                                 </button>
                                                 <button
                                                     onClick={() => togglePublish(page.id, page.is_published)}
                                                     className="w-full text-left px-4 py-2.5 text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/5 flex items-center gap-3 transition-colors"
                                                 >
-                                                    <Archive size={14} /> {page.is_published ? 'Unpublish' : 'Publish'}
+                                                    <Archive size={14} /> {page.is_published ? t('bioPages.unpublish') : t('bioPages.publish')}
                                                 </button>
                                                 <div className="h-px bg-white/5 my-1"></div>
                                                 <button
@@ -249,7 +250,7 @@ const BioPagesList = () => {
                                                     }}
                                                     className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-500/10 flex items-center gap-3 transition-colors"
                                                 >
-                                                    <Trash2 size={14} /> Delete Page
+                                                    <Trash2 size={14} /> {t('bioPages.deletePage')}
                                                 </button>
                                             </div>
                                         </>
@@ -260,7 +261,7 @@ const BioPagesList = () => {
                             <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between text-xs font-bold text-zinc-500 uppercase tracking-wider">
                                 <div className="flex items-center gap-2">
                                     <BarChart2 size={14} className="text-zinc-600" />
-                                    <span className="text-zinc-400">0</span> Views
+                                    <span className="text-zinc-400">{page.views || 0}</span> {t('bioPages.views')}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Smartphone size={14} className="text-zinc-600" />
@@ -279,7 +280,7 @@ const BioPagesList = () => {
                     <div className="w-16 h-16 rounded-full bg-white/5 group-hover:bg-blue-500/10 flex items-center justify-center transition-colors">
                         <Plus size={32} />
                     </div>
-                    <span className="font-bold text-lg">Create Page</span>
+                    <span className="font-bold text-lg">{t('bioPages.createPage')}</span>
                 </button>
             </div>
         </div>
