@@ -1,7 +1,7 @@
 import express from "express";
 import accountRoutes from "./account.js";
-import { hash, fail, parse, auth, admin } from "./security.js";
-import { pool } from "./db.js";
+import { hash, fail, parse, auth, admin, isAdminEmail } from "./security.js";
+import { pool, transaction } from "./db.js";
 import { startMailWorker } from "./mail.js";
 export { pool };
 import cookieParser from "cookie-parser";
@@ -164,13 +164,16 @@ app.get("/api/admin/users/:id", admin, async (req, res) => {
     pool.execute("SELECT id,title,short_slug,original_url,clicks,is_archived,created_at FROM links WHERE user_id=? ORDER BY created_at DESC LIMIT 200", [req.params.id]),
     pool.execute("SELECT id,slug,profile_title,profile_bio,is_published,views,created_at FROM bio_pages WHERE user_id=? ORDER BY created_at DESC LIMIT 100", [req.params.id]),
   ]);
-  res.json({ data: { user: users[0], links, bio_pages: bioPages } });
+  res.json({ data: { user: { ...users[0], is_admin: isAdminEmail(users[0].email) }, links, bio_pages: bioPages } });
 });
 app.patch("/api/admin/users/:id/access", admin, async (req, res) => {
   if (!/^[a-f0-9-]{36}$/i.test(req.params.id))
     throw fail(400, "Geçersiz kullanıcı kimliği.");
   if (req.params.id === req.user.id)
     throw fail(400, "Kendi hesabınızın erişimini buradan değiştiremezsiniz.");
+  const [target] = await pool.execute("SELECT email FROM users WHERE id=? LIMIT 1", [req.params.id]);
+  if (target[0] && isAdminEmail(target[0].email))
+    throw fail(403, "Yönetici hesabının erişimi bu panelden değiştirilemez.");
   if (typeof req.body?.disabled !== "boolean")
     throw fail(400, "Erişim durumu geçersiz.");
   const reason = String(req.body.reason || "").trim().slice(0, 500) || null;
@@ -182,6 +185,100 @@ app.patch("/api/admin/users/:id/access", admin, async (req, res) => {
   if (req.body.disabled)
     await pool.execute("DELETE FROM sessions WHERE user_id=?", [req.params.id]);
   res.json({ data: { id: req.params.id, access_disabled: req.body.disabled } });
+});
+app.patch("/api/admin/users/:id/profile", admin, async (req, res) => {
+  const { id } = req.params;
+  if (!/^[a-f0-9-]{36}$/i.test(id)) throw fail(400, "Geçersiz kullanıcı kimliği.");
+  const fullName = String(req.body?.full_name ?? "").trim();
+  const avatarUrl = String(req.body?.avatar_url ?? "").trim();
+  if (fullName.length > 200 || avatarUrl.length > 2000)
+    throw fail(400, "Profil alanları izin verilen uzunluğu aşıyor.");
+  if (avatarUrl) {
+    try {
+      const url = new URL(avatarUrl, "https://lenk.tr");
+      if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+    } catch { throw fail(400, "Geçerli bir profil görseli adresi girin."); }
+  }
+  const result = await transaction(async (connection) => {
+    const [rows] = await connection.execute("SELECT metadata FROM users WHERE id=? FOR UPDATE", [id]);
+    if (!rows[0]) throw fail(404, "Kullanıcı bulunamadı.");
+    const metadata = { ...parse(rows[0].metadata), full_name: fullName, avatar_url: avatarUrl };
+    await connection.execute("UPDATE users SET metadata=? WHERE id=?", [JSON.stringify(metadata), id]);
+    await connection.execute("UPDATE profiles SET full_name=?,avatar_url=?,updated_at=UTC_TIMESTAMP() WHERE id=?", [fullName, avatarUrl || null, id]);
+    return { full_name: fullName, avatar_url: avatarUrl || null };
+  });
+  res.json({ data: result });
+});
+app.patch("/api/admin/users/:id/links/:linkId", admin, async (req, res) => {
+  const { id, linkId } = req.params;
+  if (![id, linkId].every((value) => /^[a-f0-9-]{36}$/i.test(value))) throw fail(400, "Geçersiz kayıt kimliği.");
+  const values = req.body || {};
+  const title = String(values.title ?? "").trim().slice(0, 500);
+  const originalUrl = String(values.original_url ?? "").trim();
+  const slug = values.short_slug;
+  urlCheck(originalUrl);
+  if (typeof slug !== "string") throw fail(400, "Kısa adres gerekli.");
+  slugCheck(slug);
+  const archived = values.is_archived === true;
+  await transaction(async (connection) => {
+    const [rows] = await connection.execute("SELECT id FROM links WHERE id=? AND user_id=? FOR UPDATE", [linkId, id]);
+    if (!rows[0]) throw fail(404, "Kısa bağlantı bulunamadı.");
+    await connection.execute("UPDATE slugs SET slug=? WHERE resource_id=?", [slug, linkId]);
+    await connection.execute("UPDATE links SET title=?,original_url=?,short_slug=?,is_archived=? WHERE id=? AND user_id=?", [title || null, originalUrl, slug, archived, linkId, id]);
+  });
+  res.json({ data: { id: linkId } });
+});
+app.patch("/api/admin/users/:id/bio-pages/:bioId", admin, async (req, res) => {
+  const { id, bioId } = req.params;
+  if (![id, bioId].every((value) => /^[a-f0-9-]{36}$/i.test(value))) throw fail(400, "Geçersiz kayıt kimliği.");
+  const values = req.body || {};
+  const title = String(values.profile_title ?? "").trim().slice(0, 500);
+  const bio = String(values.profile_bio ?? "").trim().slice(0, 5000);
+  if (typeof values.slug !== "string") throw fail(400, "Bio sayfa adresi gerekli.");
+  slugCheck(values.slug);
+  await transaction(async (connection) => {
+    const [rows] = await connection.execute("SELECT id FROM bio_pages WHERE id=? AND user_id=? FOR UPDATE", [bioId, id]);
+    if (!rows[0]) throw fail(404, "Bio sayfası bulunamadı.");
+    await connection.execute("UPDATE slugs SET slug=? WHERE resource_id=?", [values.slug, bioId]);
+    await connection.execute("UPDATE bio_pages SET profile_title=?,profile_bio=?,slug=?,is_published=? WHERE id=? AND user_id=?", [title || null, bio || null, values.slug, values.is_published === true, bioId, id]);
+  });
+  res.json({ data: { id: bioId } });
+});
+app.delete("/api/admin/users/:id/links/:linkId", admin, async (req, res) => {
+  const { id, linkId } = req.params;
+  if (![id, linkId].every((value) => /^[a-f0-9-]{36}$/i.test(value))) throw fail(400, "Geçersiz kayıt kimliği.");
+  await transaction(async (connection) => {
+    const [rows] = await connection.execute("SELECT id FROM links WHERE id=? AND user_id=? FOR UPDATE", [linkId, id]);
+    if (!rows[0]) throw fail(404, "Kısa bağlantı bulunamadı.");
+    await connection.execute("DELETE FROM slugs WHERE resource_id=?", [linkId]);
+    await connection.execute("DELETE FROM links WHERE id=? AND user_id=?", [linkId, id]);
+  });
+  res.json({ data: { id: linkId } });
+});
+app.delete("/api/admin/users/:id/bio-pages/:bioId", admin, async (req, res) => {
+  const { id, bioId } = req.params;
+  if (![id, bioId].every((value) => /^[a-f0-9-]{36}$/i.test(value))) throw fail(400, "Geçersiz kayıt kimliği.");
+  await transaction(async (connection) => {
+    const [rows] = await connection.execute("SELECT id FROM bio_pages WHERE id=? AND user_id=? FOR UPDATE", [bioId, id]);
+    if (!rows[0]) throw fail(404, "Bio sayfası bulunamadı.");
+    await connection.execute("DELETE FROM slugs WHERE resource_id=?", [bioId]);
+    await connection.execute("DELETE FROM bio_pages WHERE id=? AND user_id=?", [bioId, id]);
+  });
+  res.json({ data: { id: bioId } });
+});
+app.delete("/api/admin/users/:id", admin, async (req, res) => {
+  const { id } = req.params;
+  if (!/^[a-f0-9-]{36}$/i.test(id)) throw fail(400, "Geçersiz kullanıcı kimliği.");
+  if (id === req.user.id) throw fail(400, "Kendi yönetici hesabınızı buradan silemezsiniz.");
+  await transaction(async (connection) => {
+    const [rows] = await connection.execute("SELECT id,email FROM users WHERE id=? FOR UPDATE", [id]);
+    if (!rows[0]) throw fail(404, "Kullanıcı bulunamadı.");
+    if (isAdminEmail(rows[0].email)) throw fail(403, "Yönetici hesabı kullanıcı panelinden silinemez.");
+    await connection.execute("DELETE s FROM slugs s JOIN links l ON l.id=s.resource_id WHERE l.user_id=?", [id]);
+    await connection.execute("DELETE s FROM slugs s JOIN bio_pages b ON b.id=s.resource_id WHERE b.user_id=?", [id]);
+    await connection.execute("DELETE FROM users WHERE id=?", [id]);
+  });
+  res.json({ data: { id, deleted: true } });
 });
 const columns = {
   notifications: ["id", "user_id", "type", "content", "is_read", "created_at"],

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowUpRight, Ban, CheckCircle2, ChevronLeft, ChevronRight, Eye, Link2, LoaderCircle, Search, Users } from "lucide-react";
+import { AlertCircle, ArrowUpRight, Ban, CheckCircle2, ChevronLeft, ChevronRight, Eye, Link2, LoaderCircle, Pencil, Search, Trash2, Users, X } from "lucide-react";
 import SEO from "../components/SEO";
 
 async function getData(url) {
@@ -25,6 +25,9 @@ export default function AdminPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState("");
   const [accessSaving, setAccessSaving] = useState(false);
+  const [editor, setEditor] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const pageSize = 20;
 
   useEffect(() => {
@@ -93,12 +96,81 @@ export default function AdminPage() {
     finally { setAccessSaving(false); }
   }
 
+  function openEditor(type, item = {}) {
+    const fields = type === "profile"
+      ? { full_name: details.user.full_name || "", avatar_url: details.user.avatar_url || "" }
+      : type === "link"
+        ? { title: item.title || "", original_url: item.original_url || "", short_slug: item.short_slug || "", is_archived: Boolean(item.is_archived) }
+        : { profile_title: item.profile_title || "", slug: item.slug || "", profile_bio: item.profile_bio || "", is_published: Boolean(item.is_published) };
+    setEditor({ type, id: item.id, values: fields });
+  }
+
+  async function submitEditor(event) {
+    event.preventDefault();
+    if (!editor || !details || saving) return;
+    setSaving(true);
+    setError("");
+    const paths = {
+      profile: `/api/admin/users/${details.user.id}/profile`,
+      link: `/api/admin/users/${details.user.id}/links/${editor.id}`,
+      bio: `/api/admin/users/${details.user.id}/bio-pages/${editor.id}`,
+    };
+    try {
+      const response = await fetch(paths[editor.type], {
+        method: "PATCH", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(editor.values),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error?.message || "Değişiklik kaydedilemedi.");
+      setEditor(null);
+      const [fresh] = await Promise.all([
+        getData(`/api/admin/users/${details.user.id}`),
+        loadUsers(),
+      ]);
+      setDetails(fresh);
+    } catch (cause) { setError(cause.message); }
+    finally { setSaving(false); }
+  }
+
+  async function removeRecord(type, item = {}) {
+    if (!details || deleting) return;
+    const base = `/api/admin/users/${details.user.id}`;
+    let path = base;
+    if (type === "link") path += `/links/${item.id}`;
+    if (type === "bio") path += `/bio-pages/${item.id}`;
+    if (type === "user") {
+      const typed = window.prompt(`Bu işlem ${details.user.email} hesabını ve tüm bağlantılarını kalıcı olarak siler. Onaylamak için e-posta adresini yaz:`);
+      if (typed !== details.user.email) return;
+    } else if (!window.confirm(type === "link" ? `“${item.short_slug}” kısa bağlantısı kalıcı olarak silinsin mi?` : `“${item.slug}” bio sayfası kalıcı olarak silinsin mi?`)) return;
+    setDeleting(true);
+    setError("");
+    try {
+      const response = await fetch(path, { method: "DELETE", credentials: "same-origin", headers: { Accept: "application/json" } });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error?.message || "Kayıt silinemedi.");
+      if (type === "user") {
+        setDetails(null);
+        setSelected(null);
+        await loadUsers();
+      } else {
+        const [fresh] = await Promise.all([getData(base), loadUsers()]);
+        setDetails(fresh);
+      }
+    } catch (cause) { setError(cause.message); }
+    finally { setDeleting(false); }
+  }
+
+  function updateEditor(key, value) {
+    setEditor((current) => ({ ...current, values: { ...current.values, [key]: value } }));
+  }
+
   return (
     <div className="space-y-7">
       <SEO title="Yönetim paneli | LENK.TR" description="LENK.TR kullanıcı ve içerik yönetimi." url="/admin" noIndex />
       <header className="flex flex-col gap-2 border-b border-white/5 pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">LENK.TR / Yönetim</p><h1 className="mt-2 text-3xl font-bold tracking-tight text-white">Admin paneli</h1><p className="mt-1 text-sm text-zinc-400">Kullanıcı profillerini ve oluşturdukları bağlantıları görüntüle.</p></div>
-        <span className="text-xs text-zinc-500">Salt okunur görünüm</span>
+        <span className="text-xs text-zinc-500">Hesap ve içerik yönetimi</span>
       </header>
 
       {error && <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-300"><AlertCircle size={17} />{error}</div>}
@@ -121,12 +193,14 @@ export default function AdminPage() {
 
         <section className="min-w-0 space-y-5">
           {detailLoading ? <div className="grid min-h-52 place-items-center rounded-2xl border border-white/5 bg-[#101319]"><LoaderCircle className="animate-spin text-blue-400" /></div> : details ? <>
-            <article className="flex min-w-0 flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/5 bg-[#101319] p-4 sm:p-5"><div className="flex min-w-0 items-center gap-4"><div className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-blue-500/10 font-semibold text-blue-300">{details.user.avatar_url ? <img src={details.user.avatar_url} alt="" className="size-full object-cover" /> : (details.user.full_name || details.user.email || "U").slice(0, 1).toUpperCase()}</div><div className="min-w-0"><h2 className="truncate font-semibold text-white">{details.user.full_name || "İsimsiz profil"}</h2><p className="truncate text-sm text-zinc-400">{details.user.email}</p><p className="mt-1 text-xs text-zinc-500">Kayıt: {new Date(details.user.created_at).toLocaleDateString("tr-TR")}</p>{details.user.access_disabled && <p className="mt-1 text-xs text-red-300">Erişim kısıtlı{details.user.access_disabled_reason ? ` · ${details.user.access_disabled_reason}` : ""}</p>}</div></div><button type="button" onClick={toggleAccess} disabled={accessSaving} className={`inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:opacity-50 ${details.user.access_disabled ? "border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/10" : "border-red-500/20 text-red-300 hover:bg-red-500/10"}`}>{accessSaving ? <LoaderCircle size={15} className="animate-spin" /> : details.user.access_disabled ? <CheckCircle2 size={15} /> : <Ban size={15} />}{details.user.access_disabled ? "Erişimi aç" : "Erişimi kısıtla"}</button></article>
-            <article className="overflow-hidden rounded-2xl border border-white/5 bg-[#101319]"><div className="flex items-center justify-between border-b border-white/5 px-4 py-3.5 sm:px-5"><h3 className="font-semibold text-white">Kısa bağlantılar</h3><span className="text-xs text-zinc-500">{number(details.links.length)} gösteriliyor · son 200</span></div>{details.links.length ? <div className="divide-y divide-white/5">{details.links.map((link) => <div key={link.id} className="flex min-w-0 items-center justify-between gap-3 px-4 py-3 sm:px-5"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{link.title || link.short_slug}</p><a href={`https://lenk.tr/${encodeURIComponent(link.short_slug)}`} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:text-blue-300">lenk.tr/{link.short_slug}</a><p className="mt-0.5 truncate text-xs text-zinc-500" title={link.original_url}>{link.original_url}</p></div><span className="shrink-0 text-xs text-zinc-400">{number(link.clicks)} tık</span></div>)}</div> : <p className="p-6 text-sm text-zinc-500">Henüz kısa bağlantı oluşturmamış.</p>}</article>
-            <article className="overflow-hidden rounded-2xl border border-white/5 bg-[#101319]"><div className="flex items-center justify-between border-b border-white/5 px-4 py-3.5 sm:px-5"><h3 className="font-semibold text-white">Bio sayfaları</h3><span className="text-xs text-zinc-500">{number(details.bio_pages.length)} gösteriliyor · son 100</span></div>{details.bio_pages.length ? <div className="divide-y divide-white/5">{details.bio_pages.map((bio) => <div key={bio.id} className="flex min-w-0 items-center justify-between gap-3 px-4 py-3 sm:px-5"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{bio.profile_title || bio.slug}</p><Link to={`/${encodeURIComponent(bio.slug)}`} target="_blank" className="text-xs text-blue-400 hover:text-blue-300">lenk.tr/{bio.slug}</Link></div><span className="shrink-0 text-xs text-zinc-400">{number(bio.views)} görüntülenme</span></div>)}</div> : <p className="p-6 text-sm text-zinc-500">Henüz bio sayfası oluşturmamış.</p>}</article>
+            <article className="flex min-w-0 flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/5 bg-[#101319] p-4 sm:p-5"><div className="flex min-w-0 items-center gap-4"><div className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-blue-500/10 font-semibold text-blue-300">{details.user.avatar_url ? <img src={details.user.avatar_url} alt="" className="size-full object-cover" /> : (details.user.full_name || details.user.email || "U").slice(0, 1).toUpperCase()}</div><div className="min-w-0"><h2 className="truncate font-semibold text-white">{details.user.full_name || "İsimsiz profil"}</h2><p className="truncate text-sm text-zinc-400">{details.user.email}</p><p className="mt-1 text-xs text-zinc-500">Kayıt: {new Date(details.user.created_at).toLocaleDateString("tr-TR")}</p>{details.user.access_disabled && <p className="mt-1 text-xs text-red-300">Erişim kısıtlı{details.user.access_disabled_reason ? ` · ${details.user.access_disabled_reason}` : ""}</p>}</div></div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => openEditor("profile")} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/5"><Pencil size={14} />Profili düzenle</button><button type="button" onClick={toggleAccess} disabled={accessSaving || details.user.is_admin} title={details.user.is_admin ? "Yönetici hesabının erişimi buradan değiştirilemez" : undefined} className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:opacity-50 ${details.user.access_disabled ? "border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/10" : "border-red-500/20 text-red-300 hover:bg-red-500/10"}`}>{accessSaving ? <LoaderCircle size={15} className="animate-spin" /> : details.user.access_disabled ? <CheckCircle2 size={15} /> : <Ban size={15} />}{details.user.access_disabled ? "Erişimi aç" : "Erişimi kısıtla"}</button><button type="button" onClick={() => void removeRecord("user")} disabled={deleting || details.user.is_admin} title={details.user.is_admin ? "Yönetici hesabı panelden silinemez" : "Hesabı kalıcı sil"} className="inline-flex items-center gap-2 rounded-lg border border-red-500/20 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-40"><Trash2 size={14} />Hesabı sil</button></div></article>
+            <article className="overflow-hidden rounded-2xl border border-white/5 bg-[#101319]"><div className="flex items-center justify-between border-b border-white/5 px-4 py-3.5 sm:px-5"><h3 className="font-semibold text-white">Kısa bağlantılar</h3><span className="text-xs text-zinc-500">{number(details.links.length)} gösteriliyor · son 200</span></div>{details.links.length ? <div className="divide-y divide-white/5">{details.links.map((link) => <div key={link.id} className="flex min-w-0 items-center justify-between gap-3 px-4 py-3 sm:px-5"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{link.title || link.short_slug}</p><a href={`https://lenk.tr/${encodeURIComponent(link.short_slug)}`} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:text-blue-300">lenk.tr/{link.short_slug}</a><p className="mt-0.5 truncate text-xs text-zinc-500" title={link.original_url}>{link.original_url}</p><p className="mt-1 text-xs text-zinc-400">{number(link.clicks)} tık{link.is_archived ? " · arşivli" : ""}</p></div><div className="flex shrink-0 gap-1"><button type="button" onClick={() => openEditor("link", link)} aria-label={`${link.short_slug} bağlantısını düzenle`} className="rounded-lg p-2 text-zinc-400 hover:bg-white/5 hover:text-white"><Pencil size={15} /></button><button type="button" onClick={() => void removeRecord("link", link)} disabled={deleting} aria-label={`${link.short_slug} bağlantısını sil`} className="rounded-lg p-2 text-red-400 hover:bg-red-500/10 disabled:opacity-40"><Trash2 size={15} /></button></div></div>)}</div> : <p className="p-6 text-sm text-zinc-500">Henüz kısa bağlantı oluşturmamış.</p>}</article>
+            <article className="overflow-hidden rounded-2xl border border-white/5 bg-[#101319]"><div className="flex items-center justify-between border-b border-white/5 px-4 py-3.5 sm:px-5"><h3 className="font-semibold text-white">Bio sayfaları</h3><span className="text-xs text-zinc-500">{number(details.bio_pages.length)} gösteriliyor · son 100</span></div>{details.bio_pages.length ? <div className="divide-y divide-white/5">{details.bio_pages.map((bio) => <div key={bio.id} className="flex min-w-0 items-center justify-between gap-3 px-4 py-3 sm:px-5"><div className="min-w-0"><p className="truncate text-sm font-medium text-white">{bio.profile_title || bio.slug}</p><Link to={`/${encodeURIComponent(bio.slug)}`} target="_blank" className="text-xs text-blue-400 hover:text-blue-300">lenk.tr/{bio.slug}</Link><p className="mt-1 text-xs text-zinc-400">{number(bio.views)} görüntülenme{bio.is_published ? " · yayında" : " · taslak"}</p></div><div className="flex shrink-0 gap-1"><button type="button" onClick={() => openEditor("bio", bio)} aria-label={`${bio.slug} bio sayfasını düzenle`} className="rounded-lg p-2 text-zinc-400 hover:bg-white/5 hover:text-white"><Pencil size={15} /></button><button type="button" onClick={() => void removeRecord("bio", bio)} disabled={deleting} aria-label={`${bio.slug} bio sayfasını sil`} className="rounded-lg p-2 text-red-400 hover:bg-red-500/10 disabled:opacity-40"><Trash2 size={15} /></button></div></div>)}</div> : <p className="p-6 text-sm text-zinc-500">Henüz bio sayfası oluşturmamış.</p>}</article>
           </> : <div className="grid min-h-52 place-items-center rounded-2xl border border-white/5 bg-[#101319] p-6 text-center text-sm text-zinc-500">Görüntülemek için kullanıcı seç.</div>}
         </section>
       </div>
+
+      {editor && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/75 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setEditor(null); }}><form role="dialog" aria-modal="true" aria-labelledby="admin-editor-title" onSubmit={submitEditor} className="w-full max-w-xl space-y-5 rounded-2xl border border-white/10 bg-[#11141b] p-5 shadow-2xl sm:p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-blue-400">Yönetici düzenlemesi</p><h2 id="admin-editor-title" className="mt-1 text-xl font-semibold text-white">{editor.type === "profile" ? "Profili düzenle" : editor.type === "link" ? "Kısa bağlantıyı düzenle" : "Bio sayfasını düzenle"}</h2></div><button type="button" onClick={() => setEditor(null)} disabled={saving} aria-label="Kapat" className="rounded-lg p-2 text-zinc-400 hover:bg-white/5 disabled:opacity-50"><X size={18} /></button></div><div className="space-y-4">{Object.entries(editor.values).map(([key, value]) => { const checkbox = typeof value === "boolean"; const textarea = key === "profile_bio"; const labels = { full_name: "Ad soyad", avatar_url: "Avatar görseli URL’si", title: "Link başlığı", original_url: "Hedef URL", short_slug: "Kısa adres", is_archived: "Bağlantıyı arşivle", profile_title: "Bio başlığı", slug: "Bio adresi", profile_bio: "Bio açıklaması", is_published: "Bio sayfasını yayımla" }; return <label key={key} className={checkbox ? "flex items-center gap-3 text-sm text-zinc-200" : "block space-y-1.5 text-sm text-zinc-300"}>{checkbox ? <><input type="checkbox" checked={value} onChange={(event) => updateEditor(key, event.target.checked)} className="size-4 accent-blue-500" />{labels[key]}</> : <>{labels[key]}{textarea ? <textarea rows={5} value={value} onChange={(event) => updateEditor(key, event.target.value)} className="w-full resize-y rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-white outline-none focus:border-blue-500" /> : <input type={key === "original_url" ? "url" : "text"} required={key === "original_url" || key === "short_slug" || key === "slug"} value={value} onChange={(event) => updateEditor(key, event.target.value)} className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-white outline-none focus:border-blue-500" />}</>}</label>; })}</div><div className="flex justify-end gap-2 border-t border-white/5 pt-4"><button type="button" onClick={() => setEditor(null)} disabled={saving} className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-zinc-300 hover:bg-white/5">Vazgeç</button><button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50">{saving ? <LoaderCircle size={16} className="animate-spin" /> : <Pencil size={15} />}Kaydet</button></div></form></div>}
     </div>
   );
 }
