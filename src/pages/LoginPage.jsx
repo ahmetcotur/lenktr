@@ -6,7 +6,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
 import Badge from '../components/ui/Badge';
-import { createClient } from '../utils/api/client';
+import { createClient, request } from '../utils/api/client';
 import { useTranslation } from 'react-i18next';
 
 const api = createClient();
@@ -18,11 +18,16 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [verificationRequired, setVerificationRequired] = useState(false);
+    const [resending, setResending] = useState(false);
+    const [resendMessage, setResendMessage] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setVerificationRequired(false);
+        setResendMessage('');
 
         const { error } = await api.auth.signInWithPassword({
             email,
@@ -31,10 +36,19 @@ const LoginPage = () => {
 
         if (error) {
             setError(error.message);
+            setVerificationRequired(/doğrula|verify your email/i.test(error.message));
             setLoading(false);
         } else {
             navigate('/dashboard');
         }
+    };
+
+    const resendVerification = async () => {
+        setResending(true);
+        const result = await request('/api/auth/resend-verification', { email });
+        setResending(false);
+        if (result.error) setError(result.error.message);
+        else setResendMessage(t('login.verificationResent'));
     };
 
     const toggleLanguage = () => {
@@ -83,6 +97,8 @@ const LoginPage = () => {
                             {error}
                         </div>
                     )}
+                    {verificationRequired && <button type="button" disabled={resending || !email} onClick={resendVerification} className="mb-6 w-full rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 text-sm font-semibold text-blue-300 disabled:opacity-50">{resending ? <Loader2 size={16} className="mx-auto animate-spin" /> : t('login.resendVerification')}</button>}
+                    {resendMessage && <p role="status" className="mb-6 text-center text-sm text-green-400">{resendMessage}</p>}
 
                     <form className="space-y-8" onSubmit={handleSubmit}>
                         <div className="space-y-6">

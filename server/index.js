@@ -55,6 +55,65 @@ function urlCheck(value) {
   if (!["http:", "https:"].includes(u.protocol))
     throw fail(400, "URL http veya https ile başlamalı.");
 }
+function classifySource(referrer, userAgent = "") {
+  const agent = userAgent.toLowerCase();
+  const host = (() => {
+    const value = String(referrer || "").trim();
+    if (!value || value.toLowerCase() === "direct") return "";
+    try {
+      return new URL(value.startsWith("//") ? `https:${value}` : value.includes("://") ? value : `https://${value}`).hostname.toLowerCase().replace(/^www\./, "");
+    } catch { return ""; }
+  })();
+  const aiAgent = [
+    [/chatgpt-user|openai-user/, "ChatGPT"],
+    [/claude-user|anthropic-user/, "Claude"],
+    [/perplexity-user/, "Perplexity"],
+  ].find(([pattern]) => pattern.test(agent));
+  if (aiAgent) return { type: "ai", name: aiAgent[1] };
+  const bots = [
+    [/googlebot|google-inspectiontool/, "Googlebot"], [/bingbot|msnbot/, "Bingbot"],
+    [/duckduckbot/, "DuckDuckBot"], [/yandexbot/, "YandexBot"], [/baiduspider/, "Baiduspider"],
+    [/gptbot|oai-searchbot|openai-searchbot/, "OpenAI crawler"], [/claudebot|anthropic-ai/, "Anthropic crawler"],
+    [/perplexitybot/, "Perplexity crawler"], [/applebot/, "Applebot"], [/bytespider/, "ByteDance crawler"],
+    [/facebookexternalhit|facebookcatalog/, "Meta preview bot"], [/twitterbot/, "X preview bot"],
+    [/linkedinbot/, "LinkedIn preview bot"], [/discordbot/, "Discord preview bot"], [/slackbot/, "Slack preview bot"],
+    [/telegrambot/, "Telegram preview bot"], [/whatsapp/, "WhatsApp preview bot"],
+    [/bot|crawler|spider|crawl|scrapy|headlesschrome|preview/, "Other bot"],
+  ].find(([pattern]) => pattern.test(agent));
+  if (bots) return { type: "bot", name: bots[1] };
+  if (!host) return { type: "direct", name: "Direct" };
+  const platforms = [
+    ["ai", "ChatGPT", ["chatgpt.com", "chat.openai.com"]], ["ai", "Claude", ["claude.ai"]],
+    ["ai", "Gemini", ["gemini.google.com"]], ["ai", "Copilot", ["copilot.microsoft.com"]],
+    ["ai", "Perplexity", ["perplexity.ai"]], ["ai", "Poe", ["poe.com"]],
+    ["ai", "You.com", ["you.com"]], ["ai", "Phind", ["phind.com"]],
+    ["ai", "DeepSeek", ["deepseek.com"]], ["ai", "Mistral", ["mistral.ai"]],
+    ["social", "Instagram", ["instagram.com"]], ["social", "TikTok", ["tiktok.com"]],
+    ["social", "Facebook", ["facebook.com", "fb.com"]], ["social", "X", ["x.com", "twitter.com"]],
+    ["social", "LinkedIn", ["linkedin.com"]], ["social", "Pinterest", ["pinterest.com"]],
+    ["social", "Reddit", ["reddit.com"]], ["social", "YouTube", ["youtube.com", "youtu.be"]],
+    ["social", "Threads", ["threads.net"]], ["social", "Snapchat", ["snapchat.com"]],
+    ["social", "Discord", ["discord.com", "discord.gg"]], ["social", "WhatsApp", ["whatsapp.com"]],
+    ["social", "Telegram", ["t.me", "telegram.org"]], ["social", "Twitch", ["twitch.tv"]],
+    ["search", "Bing", ["bing.com"]],
+    ["search", "Yahoo", ["search.yahoo.com"]], ["search", "DuckDuckGo", ["duckduckgo.com"]],
+    ["search", "Yandex", ["yandex.com", "yandex.ru"]], ["search", "Baidu", ["baidu.com"]],
+    ["search", "Brave Search", ["search.brave.com"]],
+  ];
+  if (/^(?:www\.)?google\.(?:com(?:\.[a-z]{2})?|[a-z]{2,3})$/.test(host)) return { type: "search", name: "Google" };
+  for (const [type, name, domains] of platforms)
+    if (domains.some((domain) => host === domain || host.endsWith(`.${domain}`))) return { type, name };
+  return { type: "referral", name: host };
+}
+function countryFromRequest(req) {
+  const country = String(req.get("cf-ipcountry") || "").trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(country) && country !== "XX" ? country : "Unknown";
+}
+function deviceFromAgent(agent) {
+  if (/iPad|Tablet|Kindle|Silk|PlayBook/i.test(agent) || (/Android/i.test(agent) && !/Mobile/i.test(agent))) return "tablet";
+  if (/Mobi|iPhone|iPod|Android/i.test(agent)) return "mobile";
+  return agent ? "desktop" : "other";
+}
 function normalize(row) {
   const r = { ...row };
   if (r.theme_settings) r.theme_settings = parse(r.theme_settings);
@@ -110,6 +169,23 @@ app.use("/api", async (req, res, next) => {
         if (req.path !== "/auth/session" && req.path !== "/auth/logout")
           return res.status(403).json({ error: { message: "Bu hesabın erişimi yönetici tarafından kısıtlandı." } });
       }
+      if (req.user && !req.user.email_verified_at && parse(req.user.metadata)?.email_verification_required) {
+        const verificationPaths = new Set([
+          "/auth/session", "/auth/logout", "/auth/login", "/auth/register",
+          "/auth/verify-email", "/auth/resend-verification",
+        ]);
+        if (!verificationPaths.has(req.path)) {
+          await pool.execute("DELETE FROM sessions WHERE token_hash=?", [hash(token)]);
+          res.clearCookie("lenk_session", { path: "/" });
+          req.user = null;
+          if (req.path !== "/auth/session")
+            return res.status(403).json({ error: { message: "Hesabınıza erişmek için e-posta adresinizi doğrulayın." } });
+        } else if (["/auth/session", "/auth/logout", "/auth/login", "/auth/register"].includes(req.path)) {
+          await pool.execute("DELETE FROM sessions WHERE token_hash=?", [hash(token)]);
+          res.clearCookie("lenk_session", { path: "/" });
+          req.user = null;
+        }
+      }
     }
     next();
   } catch (e) {
@@ -130,7 +206,7 @@ app.get("/api/analytics", auth, async (req, res) => {
   const start = new Date(Date.now() - selected.amount * (selected.unit === "hour" ? 3600000 : 86400000))
     .toISOString().slice(0, 23).replace("T", " ");
   const userId = req.user.id;
-  const [totalsRows, seriesRows, sourceRows, deviceRows, itemRows] = await Promise.all([
+  const [totalsRows, seriesRows, sourceRows, deviceRows, countryRows, itemRows] = await Promise.all([
     pool.execute(
       "SELECT COUNT(*) AS events, COALESCE(SUM(type='link'),0) AS clicks, COALESCE(SUM(type='bio'),0) AS views FROM traffic_logs WHERE user_id=? AND created_at>=?",
       [userId, start],
@@ -140,47 +216,81 @@ app.get("/api/analytics", auth, async (req, res) => {
       [selected.format, userId, start],
     ),
     pool.execute(
-      "SELECT referrer,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? GROUP BY referrer",
+      "SELECT type,link_id,bio_page_id,referrer,browser,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? GROUP BY type,link_id,bio_page_id,referrer,browser",
       [userId, start],
     ),
     pool.execute(
-      "SELECT CASE WHEN browser='' THEN 'other' WHEN browser REGEXP 'iPad|Tablet|Kindle|Silk|PlayBook' OR (browser LIKE '%Android%' AND browser NOT LIKE '%Mobile%') THEN 'tablet' WHEN browser REGEXP 'Mobi|iPhone|iPod|Android' THEN 'mobile' ELSE 'desktop' END AS device,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? GROUP BY device",
+      "SELECT CASE WHEN browser='' THEN 'other' WHEN browser REGEXP 'iPad|Tablet|Kindle|Silk|PlayBook' OR (browser LIKE '%Android%' AND browser NOT LIKE '%Mobile%') THEN 'tablet' WHEN browser REGEXP 'Mobi|iPhone|iPod|Android' THEN 'mobile' ELSE 'desktop' END AS device_kind,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? GROUP BY 1",
       [userId, start],
     ),
     pool.execute(
-      `SELECT tl.type,tl.link_id,tl.bio_page_id,l.title,l.short_slug,b.profile_title,b.slug,COUNT(*) AS events FROM traffic_logs tl LEFT JOIN links l ON l.id=tl.link_id LEFT JOIN bio_pages b ON b.id=tl.bio_page_id WHERE tl.user_id=? AND tl.created_at>=? GROUP BY tl.type,tl.link_id,tl.bio_page_id,l.title,l.short_slug,b.profile_title,b.slug ORDER BY events DESC LIMIT 5`,
+      "SELECT type,link_id,bio_page_id,country,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? GROUP BY type,link_id,bio_page_id,country",
       [userId, start],
+    ),
+    pool.execute(
+      `SELECT 'link' AS type,l.id,COALESCE(l.title,l.short_slug) AS name,l.short_slug AS slug,l.original_url AS destination,COALESCE(t.events,0) AS events,l.is_archived,NULL AS is_published FROM links l LEFT JOIN (SELECT link_id,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? AND type='link' GROUP BY link_id) t ON t.link_id=l.id WHERE l.user_id=? UNION ALL SELECT 'bio' AS type,b.id,COALESCE(b.profile_title,b.slug) AS name,b.slug,NULL AS destination,COALESCE(t.events,0) AS events,NULL AS is_archived,b.is_published FROM bio_pages b LEFT JOIN (SELECT bio_page_id,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? AND type='bio' GROUP BY bio_page_id) t ON t.bio_page_id=b.id WHERE b.user_id=? ORDER BY events DESC,name`,
+      [userId, start, userId, userId, start, userId],
     ),
   ]);
   const totals = totalsRows[0][0];
   const eventCount = Number(totals.events);
-  const sources = new Map();
+  const sourceMap = new Map();
+  const itemSourceMaps = new Map();
   for (const row of sourceRows[0]) {
-    let name = "direct";
-    const value = String(row.referrer || "").trim();
-    if (value && value.toLowerCase() !== "direct") {
-      try {
-        name = new URL(value.startsWith("//") ? `https:${value}` : value.includes("://") ? value : `https://${value}`).hostname.toLowerCase().replace(/^www\./, "") || "other";
-      } catch { name = "other"; }
+    const source = classifySource(row.referrer, row.browser);
+    const amount = Number(row.events);
+    const key = `${source.type}:${source.name}`;
+    const aggregate = sourceMap.get(key) || { ...source, traffic: 0 };
+    aggregate.traffic += amount;
+    sourceMap.set(key, aggregate);
+    const itemKey = row.type === "link" ? `link:${row.link_id}` : `bio:${row.bio_page_id}`;
+    if (row.link_id || row.bio_page_id) {
+      if (!itemSourceMaps.has(itemKey)) itemSourceMaps.set(itemKey, new Map());
+      const itemSources = itemSourceMaps.get(itemKey);
+      const itemSource = itemSources.get(key) || { ...source, traffic: 0 };
+      itemSource.traffic += amount;
+      itemSources.set(key, itemSource);
     }
-    sources.set(name, (sources.get(name) || 0) + Number(row.events));
   }
-  const topSources = [...sources].map(([name, count]) => ({
-    name, traffic: count, percent: eventCount ? Math.round(count / eventCount * 100) : 0,
-  })).sort((a, b) => b.traffic - a.traffic).slice(0, 5);
-  const devices = deviceRows[0].map((row) => ({ device: row.device || "other", count: Number(row.events) }));
+  const countriesByItem = new Map();
+  const allCountries = new Map();
+  for (const row of countryRows[0]) {
+    const code = String(row.country || "").trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(code)) continue;
+    const amount = Number(row.events);
+    allCountries.set(code, (allCountries.get(code) || 0) + amount);
+    const itemKey = row.type === "link" ? `link:${row.link_id}` : `bio:${row.bio_page_id}`;
+    if (row.link_id || row.bio_page_id) {
+      if (!countriesByItem.has(itemKey)) countriesByItem.set(itemKey, new Map());
+      const itemCountries = countriesByItem.get(itemKey);
+      itemCountries.set(code, (itemCountries.get(code) || 0) + amount);
+    }
+  }
+  const formatSources = (map, denominator) => [...map.values()]
+    .map((source) => ({ ...source, percent: denominator ? Math.round(source.traffic / denominator * 100) : 0 }))
+    .sort((a, b) => b.traffic - a.traffic || a.name.localeCompare(b.name));
+  const formatCountries = (map, denominator) => [...map].map(([code, count]) => ({
+    code, count, percent: denominator ? Math.round(count / denominator * 100) : 0,
+  })).sort((a, b) => b.count - a.count);
+  const devices = deviceRows[0].map((row) => ({ device: row.device_kind || "other", count: Number(row.events) }));
   res.json({ data: {
     range, start_at: `${start.replace(" ", "T")}Z`, totals: {
       events: eventCount, clicks: Number(totals.clicks), views: Number(totals.views),
     },
     series: seriesRows[0].map((row) => ({ ...row, events: Number(row.events), clicks: Number(row.clicks), views: Number(row.views) })),
-    sources: topSources, devices,
-    top_items: itemRows[0].map((row) => ({
-      type: row.type,
-      name: (row.type === "link" ? row.title : row.profile_title) || (row.type === "link" ? row.short_slug : row.slug) || "—",
-      slug: row.type === "link" ? row.short_slug : row.slug,
-      val: Number(row.events),
-    })),
+    sources: formatSources(sourceMap, eventCount),
+    countries: formatCountries(allCountries, eventCount),
+    devices,
+    items: itemRows[0].map((row) => {
+      const itemKey = `${row.type}:${row.id}`;
+      const count = Number(row.events);
+      return {
+        type: row.type, id: row.id, name: row.name, slug: row.slug, destination: row.destination, val: count,
+        status: row.type === "link" ? (row.is_archived ? "archived" : "active") : (row.is_published ? "published" : "draft"),
+        sources: formatSources(itemSourceMaps.get(itemKey) || new Map(), count),
+        countries: formatCountries(countriesByItem.get(itemKey) || new Map(), count),
+      };
+    }),
   } });
 });
 app.get("/api/admin/session", admin, (req, res) => {
@@ -586,30 +696,26 @@ app.post("/api/resolve/:slug", async (req, res) => {
     );
     const row = rows[0];
     if (!row) throw fail(404, "Adres bulunamadı.");
-    await connection.execute(
-      `UPDATE ${table} SET ${counter}=${counter}+1 WHERE id=?`,
-      [row.id],
-    );
     const agent = req.get("user-agent") || "";
-    await connection.execute(
-      "INSERT INTO traffic_logs(id,user_id,link_id,bio_page_id,type,referrer,device,browser) VALUES(?,?,?,?,?,?,?,?)",
-      [
-        randomUUID(),
-        row.user_id,
-        ref.kind === "link" ? row.id : null,
-        ref.kind === "bio" ? row.id : null,
-        ref.kind,
-        String(req.body.referrer || "direct").slice(0, 2000),
-        /iPad|Tablet|Kindle|Silk|PlayBook/i.test(agent) || (/Android/i.test(agent) && !/Mobile/i.test(agent))
-          ? "tablet"
-          : /Mobi|iPhone|iPod|Android/i.test(agent)
-            ? "mobile"
-            : agent
-              ? "desktop"
-              : "other",
-        agent.slice(0, 200),
-      ],
-    );
+    const trackedByServer = req.cookies.lenk_bot_visit === req.params.slug && ["bot", "ai"].includes(classifySource("", agent).type);
+    if (trackedByServer) res.clearCookie("lenk_bot_visit", { path: "/" });
+    else {
+      await connection.execute(
+        `UPDATE ${table} SET ${counter}=${counter}+1 WHERE id=?`,
+        [row.id],
+      );
+      await connection.execute(
+        "INSERT INTO traffic_logs(id,user_id,link_id,bio_page_id,type,referrer,country,device,browser) VALUES(?,?,?,?,?,?,?,?,?)",
+        [
+          randomUUID(), row.user_id,
+          ref.kind === "link" ? row.id : null,
+          ref.kind === "bio" ? row.id : null,
+          ref.kind,
+          String(req.body.referrer || "direct").slice(0, 2000),
+          countryFromRequest(req), deviceFromAgent(agent), agent.slice(0, 200),
+        ],
+      );
+    }
     await connection.commit();
     const data = normalize(row);
     delete data.user_id;
@@ -676,6 +782,46 @@ app.use("/api", (req, res) =>
   res.status(404).json({ error: { message: "API bulunamadı." } }),
 );
 app.use(express.static(path.join(root, "dist")));
+app.get("/:slug", async (req, res, next) => {
+  const agent = req.get("user-agent") || "";
+  const visitor = classifySource(req.get("referer"), agent);
+  if (visitor.type !== "bot" && visitor.type !== "ai") return next();
+  const hit = await transaction(async (connection) => {
+    const [refs] = await connection.execute(
+      "SELECT * FROM slugs WHERE slug=? FOR UPDATE",
+      [req.params.slug],
+    );
+    const ref = refs[0];
+    if (!ref) return null;
+    const table = ref.kind === "link" ? "links" : "bio_pages";
+    const counter = ref.kind === "link" ? "clicks" : "views";
+    const [rows] = await connection.execute(
+      `SELECT resource.* FROM ${table} resource JOIN users owner ON owner.id=resource.user_id WHERE resource.id=? AND ${ref.kind === "link" ? "resource.is_archived=0" : "resource.is_published=1"} AND owner.access_disabled=0 FOR UPDATE`,
+      [ref.resource_id],
+    );
+    const row = rows[0];
+    if (!row) return null;
+    await connection.execute(`UPDATE ${table} SET ${counter}=${counter}+1 WHERE id=?`, [row.id]);
+    await connection.execute(
+      "INSERT INTO traffic_logs(id,user_id,link_id,bio_page_id,type,referrer,country,device,browser) VALUES(?,?,?,?,?,?,?,?,?)",
+      [
+        randomUUID(), row.user_id,
+        ref.kind === "link" ? row.id : null,
+        ref.kind === "bio" ? row.id : null,
+        ref.kind,
+        String(req.get("referer") || "direct").slice(0, 2000),
+        countryFromRequest(req), deviceFromAgent(agent), agent.slice(0, 200),
+      ],
+    );
+    return { kind: ref.kind, page: normalize(row) };
+  });
+  if (!hit) return next();
+  if (hit.kind === "link") return res.redirect(302, hit.page.original_url);
+  res.cookie("lenk_bot_visit", req.params.slug, {
+    httpOnly: true, secure: true, sameSite: "lax", maxAge: 60000, path: "/",
+  });
+  return res.sendFile(path.join(root, "dist/index.html"), { dotfiles: "allow" });
+});
 app.get("/{*path}", (req, res) =>
   res.sendFile(path.join(root, "dist/index.html"), { dotfiles: "allow" }),
 );

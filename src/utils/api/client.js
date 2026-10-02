@@ -102,7 +102,7 @@ const client = {
         },
       };
     },
-    signUp: (body) => authRequest("/api/auth/register", body, "SIGNED_IN"),
+    signUp: (body) => request("/api/auth/register", body),
     signInWithPassword: (body) =>
       authRequest("/api/auth/login", body, "SIGNED_IN"),
     signOut: () => authRequest("/api/auth/logout", {}, "SIGNED_OUT"),

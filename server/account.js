@@ -56,6 +56,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
   const metadata = {
     full_name: String(options?.data?.full_name || "").slice(0, 200),
     role: "Operator",
+    email_verification_required: true,
   };
   const connection = await pool.getConnection();
   try {
@@ -85,7 +86,12 @@ router.post("/auth/register", authLimiter, async (req, res) => {
   } finally {
     connection.release();
   }
-  await session(req, res, { id, email: address, metadata });
+  res.status(201).json({
+    data: {
+      verification_required: true,
+      user: { id, email: address, email_confirmed_at: null },
+    },
+  });
 });
 async function verificationMail(connection, user, welcome = false) {
   const token = randomBytes(32).toString("hex");
@@ -193,27 +199,24 @@ router.post("/auth/forgot-password", resetLimiter, async (req, res) => {
     },
   });
 });
-router.post(
-  "/auth/resend-verification",
-  auth,
-  resetLimiter,
-  async (req, res) => {
-    if (!req.user.email_verified_at)
-      await transaction(async (connection) => {
-        await connection.execute("SELECT id FROM users WHERE id=? FOR UPDATE", [
-          req.user.id,
-        ]);
-        await verificationMail(connection, req.user);
-      });
-    res.json({
-      data: {
-        message: req.user.email_verified_at
-          ? "E-posta adresiniz zaten doğrulanmış."
-          : "Doğrulama bağlantısı gönderim sırasına alındı.",
-      },
+router.post("/auth/resend-verification", resetLimiter, async (req, res) => {
+  let user = req.user;
+  if (!user) {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254)
+      throw fail(400, "Geçerli bir e-posta adresi girin.");
+    const [rows] = await pool.execute("SELECT * FROM users WHERE email=?", [email]);
+    user = rows[0];
+  }
+  if (user && !user.email_verified_at)
+    await transaction(async (connection) => {
+      await connection.execute("SELECT id FROM users WHERE id=? FOR UPDATE", [user.id]);
+      await verificationMail(connection, user);
     });
-  },
-);
+  res.json({
+    data: { message: "Hesap varsa doğrulama bağlantısı e-posta adresine gönderildi." },
+  });
+});
 router.post("/auth/verify-email", authLimiter, async (req, res) => {
   const { token } = req.body;
   if (typeof token !== "string" || token.length !== 64)
@@ -313,6 +316,8 @@ router.post("/auth/login", authLimiter, async (req, res) => {
     throw fail(401, "E-posta veya şifre hatalı.");
   if (rows[0].access_disabled)
     throw fail(403, "Bu hesabın erişimi yönetici tarafından kısıtlandı.");
+  if (!rows[0].email_verified_at && parse(rows[0].metadata)?.email_verification_required)
+    throw fail(403, "Giriş yapmadan önce e-posta adresinizi doğrulayın. Yeni doğrulama bağlantısı isteyebilirsiniz.");
   await session(req, res, rows[0]);
 });
 router.post("/auth/logout", async (req, res) => {

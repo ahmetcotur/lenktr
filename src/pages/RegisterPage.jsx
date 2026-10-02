@@ -42,9 +42,7 @@ const RegisterPage = () => {
             setError(error.message);
             setLoading(false);
         } else {
-            // Registration opens a local session.
-
-            navigate('/dashboard');
+            navigate('/account/verify', { state: { email: email.trim().toLowerCase() } });
         }
     };
 

@@ -13,10 +13,10 @@ const base = `http://127.0.0.1:${server.address().port}`;
 let cookieA = "",
   cookieB = "";
 const ids = [];
-async function api(endpoint, body, cookie = "") {
+async function api(endpoint, body, cookie = "", extraHeaders = {}) {
   const r = await fetch(base + endpoint, {
     method: body === undefined ? "GET" : "POST",
-    headers: { "Content-Type": "application/json", Cookie: cookie },
+    headers: { "Content-Type": "application/json", Cookie: cookie, ...extraHeaders },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   return {
@@ -36,21 +36,37 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
       password: "TestingStrong123!",
       options: { data: { full_name: "QA User" } },
     });
-    assert.equal(a.status, 200);
-    cookieA = a.cookie;
+    assert.equal(a.status, 201);
+    assert.equal(a.cookie, undefined);
     ids.push(a.body.data.user.id);
     const b = await api("/api/auth/register", {
       email: emailB,
       password: "TestingStrong123!",
     });
-    assert.equal(b.status, 200);
-    cookieB = b.cookie;
+    assert.equal(b.status, 201);
+    assert.equal(b.cookie, undefined);
     ids.push(b.body.data.user.id);
     assert.equal(
       (await api("/api/auth/login", { email: emailA, password: "wrong" }))
         .status,
       401,
     );
+    assert.equal(
+      (await api("/api/auth/login", { email: emailA, password: "TestingStrong123!" })).status,
+      403,
+    );
+    for (const [email, key] of [[emailA, "a"], [emailB, "b"]]) {
+      const [verification] = await pool.execute(
+        "SELECT text_body FROM mail_outbox WHERE user_id=? AND kind='verification' AND status='pending' ORDER BY created_at DESC LIMIT 1",
+        [key === "a" ? ids[0] : ids[1]],
+      );
+      const verifyToken = verification[0].text_body.match(/#token=([a-f0-9]{64})/)[1];
+      assert.equal((await api("/api/auth/verify-email", { token: verifyToken })).status, 200);
+      const login = await api("/api/auth/login", { email, password: "TestingStrong123!" });
+      assert.equal(login.status, 200);
+      if (key === "a") cookieA = login.cookie;
+      else cookieB = login.cookie;
+    }
     assert.equal(
       (await api("/api/auth/session", undefined, cookieA)).body.data.session
         .user.id,
@@ -146,11 +162,17 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
       ).status,
       400,
     );
-    await Promise.all(
-      Array.from({ length: 8 }, () =>
-        api("/api/resolve/" + slug, { referrer: "https://example.org" }),
-      ),
-    );
+    await Promise.all([
+      ...Array.from({ length: 6 }, () => api("/api/resolve/" + slug, { referrer: "https://example.org" })),
+      api("/api/resolve/" + slug, { referrer: "https://l.instagram.com/" }, "", { "User-Agent": "Mozilla/5.0" }),
+      api("/api/resolve/" + slug, { referrer: "direct" }, "", { "User-Agent": "GPTBot/1.0", "CF-IPCountry": "TR" }),
+    ]);
+    const botVisit = await fetch(`${base}/${slug}`, {
+      redirect: "manual",
+      headers: { "User-Agent": "GPTBot/1.0", "CF-IPCountry": "TR" },
+    });
+    assert.equal(botVisit.status, 302);
+    assert.equal(botVisit.headers.get("location"), "https://example.com");
     const counted = await api(
       "/api/query",
       {
@@ -160,14 +182,19 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
       },
       cookieA,
     );
-    assert.equal(counted.body.data.clicks, 8);
+    assert.equal(counted.body.data.clicks, 9);
     const traffic = await api("/api/query", { table: "traffic_logs" }, cookieA);
-    assert.equal(traffic.body.data.length, 8);
+    assert.equal(traffic.body.data.length, 9);
     const analytics = await api("/api/analytics?range=7d", undefined, cookieA);
     assert.equal(analytics.status, 200);
-    assert.equal(analytics.body.data.totals.clicks, 8);
-    assert.equal(analytics.body.data.totals.events, 8);
-    assert.equal(analytics.body.data.top_items[0].slug, slug);
+    assert.equal(analytics.body.data.totals.clicks, 9);
+    assert.equal(analytics.body.data.totals.events, 9);
+    const analyticsLink = analytics.body.data.items.find((item) => item.slug === slug);
+    assert.equal(analyticsLink.val, 9);
+    assert.equal(analyticsLink.sources.find((source) => source.name === "Instagram").traffic, 1);
+    assert.equal(analyticsLink.sources.find((source) => source.name === "OpenAI crawler").traffic, 2);
+    assert.equal(analyticsLink.sources.find((source) => source.name === "OpenAI crawler").type, "bot");
+    assert.equal(analyticsLink.countries.find((country) => country.code === "TR").count, 2);
     assert.equal((await api("/api/analytics?range=7d", undefined, cookieB)).body.data.totals.events, 0);
     const bioSlug = "qa-" + randomUUID();
     const bio = await api(
@@ -285,23 +312,24 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
       ).status,
       200,
     );
+    const emailC = `qa-${randomUUID()}@example.com`;
+    const c = await api("/api/auth/register", {
+      email: emailC,
+      password: "TestingStrong123!",
+    });
+    assert.equal(c.status, 201);
+    assert.equal(c.cookie, undefined);
+    ids.push(c.body.data.user.id);
+    assert.equal((await api("/api/auth/login", { email: emailC, password: "TestingStrong123!" })).status, 403);
+    assert.equal((await api("/api/auth/resend-verification", { email: emailC })).status, 200);
     const [verification] = await pool.execute(
-      "SELECT text_body FROM mail_outbox WHERE user_id=? AND kind='verification' AND status='pending'",
-      [ids[0]],
+      "SELECT text_body FROM mail_outbox WHERE user_id=? AND kind='verification' AND status='pending' ORDER BY created_at DESC LIMIT 1",
+      [ids.at(-1)],
     );
-    const verifyToken = verification[0].text_body.match(
-      /#token=([a-f0-9]{64})/,
-    )[1];
-    assert.equal(
-      (await api("/api/auth/verify-email", { token: verifyToken }, cookieA))
-        .status,
-      200,
-    );
-    assert.equal(
-      (await api("/api/auth/verify-email", { token: verifyToken }, cookieA))
-        .status,
-      400,
-    );
+    const verifyToken = verification[0].text_body.match(/#token=([a-f0-9]{64})/)[1];
+    assert.equal((await api("/api/auth/verify-email", { token: verifyToken })).status, 200);
+    assert.equal((await api("/api/auth/verify-email", { token: verifyToken })).status, 400);
+    assert.equal((await api("/api/auth/login", { email: emailC, password: "TestingStrong123!" })).status, 200);
     assert(
       (await api("/api/auth/session", undefined, cookieA)).body.data.session
         .user.email_confirmed_at,
