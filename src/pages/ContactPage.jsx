@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion as Motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import {
-  Zap,
   Mail,
   Send,
   Twitter,
@@ -13,6 +11,7 @@ import {
 } from "lucide-react";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
+import { PublicNav, PublicFooter } from "../components/layout/PublicSite";
 
 import { request } from "../utils/api/client";
 
@@ -47,25 +46,10 @@ const ContactPage = () => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/5 blur-[160px] rounded-full"></div>
       </div>
 
-      {/* Navigation */}
-      <nav className="relative z-50 flex items-center justify-between px-8 md:px-16 py-10 max-w-[1600px] mx-auto">
-        <Link to="/" className="flex items-center gap-4 group cursor-pointer">
-          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/30 group-hover:scale-105 transition-all duration-500">
-            <Zap size={28} className="text-white fill-current" />
-          </div>
-          <span className="text-3xl font-black tracking-tighter font-heading italic uppercase">
-            LENK.TR
-          </span>
-        </Link>
-        <Link to="/">
-          <Button variant="secondary" size="md">
-            {t("common.back")}
-          </Button>
-        </Link>
-      </nav>
+      <PublicNav />
 
       {/* Hero Section */}
-      <section className="relative z-10 px-6 md:px-16 pt-24 pb-32 md:pt-32 md:pb-48 max-w-[1600px] mx-auto text-center">
+      <section className="relative z-10 px-4 sm:px-6 lg:px-10 pt-12 pb-14 md:pt-20 md:pb-20 max-w-[1600px] mx-auto text-center">
         <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -74,18 +58,18 @@ const ContactPage = () => {
           <Badge variant="primary" className="mb-8">
             {t("contact.title")}
           </Badge>
-          <h1 className="text-4xl sm:text-6xl md:text-[9rem] font-black tracking-tighter font-heading text-white leading-none mb-12 uppercase italic">
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tighter font-heading text-white leading-none mb-12 uppercase italic">
             {t("contact.hero")}
           </h1>
-          <p className="text-2xl text-gray-400 font-bold max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg text-gray-400 font-medium max-w-3xl mx-auto leading-relaxed">
             {t("contact.desc")}
           </p>
         </Motion.div>
       </section>
 
       {/* Contact Form & Info */}
-      <section className="relative z-10 px-6 md:px-16 py-32 md:py-48 max-w-[1400px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-24">
+      <section className="relative z-10 px-6 md:px-16 py-14 md:py-20 max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
           {/* Contact Form */}
           <Motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -250,6 +234,7 @@ const ContactPage = () => {
           </Motion.div>
         </div>
       </section>
+      <PublicFooter />
     </div>
   );
 };

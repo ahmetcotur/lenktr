@@ -1,7 +1,7 @@
 import React from 'react';
+import { PublicNav, PublicFooter } from "../components/layout/PublicSite";
 import { useTranslation } from 'react-i18next';
 import { motion as Motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { Zap, Shield, Lock, Server, Eye, Database, Key } from 'lucide-react';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
@@ -62,38 +62,27 @@ const SecurityPage = () => {
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/5 blur-[160px] rounded-full"></div>
             </div>
 
-            {/* Navigation */}
-            <nav className="relative z-50 flex items-center justify-between px-8 md:px-16 py-10 max-w-[1600px] mx-auto">
-                <Link to="/" className="flex items-center gap-4 group cursor-pointer">
-                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/30 group-hover:scale-105 transition-all duration-500">
-                        <Zap size={28} className="text-white fill-current" />
-                    </div>
-                    <span className="text-3xl font-black tracking-tighter font-heading italic uppercase">LENK.TR</span>
-                </Link>
-                <Link to="/">
-                    <Button variant="secondary" size="md">{t('common.back')}</Button>
-                </Link>
-            </nav>
+            <PublicNav />
 
             {/* Hero Section */}
-            <section className="relative z-10 px-6 md:px-16 pt-24 pb-32 md:pt-32 md:pb-48 max-w-[1600px] mx-auto text-center">
+            <section className="relative z-10 px-6 md:px-16 pt-12 pb-16 md:pt-20 md:pb-24 max-w-[1600px] mx-auto text-center">
                 <Motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8 }}
                 >
                     <Badge variant="primary" className="mb-8">{t('security.title')}</Badge>
-                    <h1 className="text-6xl md:text-[9rem] font-black tracking-tighter font-heading text-white leading-none mb-12 uppercase italic">
+                    <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tighter font-heading text-white leading-none mb-12 uppercase italic">
                         {t('security.hero')}
                     </h1>
-                    <p className="text-2xl text-gray-400 font-bold max-w-3xl mx-auto leading-relaxed">
+                    <p className="text-base sm:text-lg text-gray-400 font-medium max-w-3xl mx-auto leading-relaxed">
                         {t('security.desc')}
                     </p>
                 </Motion.div>
             </section>
 
             {/* Security Features */}
-            <section className="relative z-10 px-6 md:px-16 py-32 md:py-48 max-w-[1600px] mx-auto">
+            <section className="relative z-10 px-6 md:px-16 py-14 md:py-20 max-w-[1600px] mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
                     {features.map((f, i) => (
                         <Motion.div
@@ -115,7 +104,7 @@ const SecurityPage = () => {
             </section>
 
             {/* Trust Badge */}
-            <section className="relative z-10 px-6 md:px-16 py-32 md:py-48 bg-white/[0.01] border-y border-white/5">
+            <section className="relative z-10 px-6 md:px-16 py-14 md:py-20 bg-white/[0.01] border-y border-white/5">
                 <div className="max-w-[1200px] mx-auto text-center">
                     <Motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -128,12 +117,13 @@ const SecurityPage = () => {
                         <h2 className="text-5xl md:text-8xl font-black tracking-tighter font-heading text-white mb-8 uppercase italic">
                             99.9% Uptime
                         </h2>
-                        <p className="text-2xl text-gray-400 font-bold max-w-2xl mx-auto leading-relaxed">
+                        <p className="text-base sm:text-lg text-gray-400 font-medium max-w-2xl mx-auto leading-relaxed">
                             Trusted by 50,000+ creators worldwide. Your links are in safe hands.
                         </p>
                     </Motion.div>
                 </div>
             </section>
+            <PublicFooter />
         </div>
     );
 };
