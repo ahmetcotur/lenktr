@@ -1,28 +1,64 @@
 # LENK.TR
-React/Vite arayüzü, Node.js API ve MariaDB 11 ile çalışan bağımsız bağlantı ve bio sayfası uygulaması.
+
+[LENK.TR](https://lenk.tr), bağlantılarını kısaltıp bio sayfalarında paylaşmanı ve trafiğini tek panelden takip etmeni sağlayan bağımsız bir link yönetim uygulamasıdır. React arayüzü, Node.js API ve MariaDB ile çalışır; Supabase çalışma zamanı gerektirmez.
+
+**Canlı site:** https://lenk.tr · **Kaynak kodu:** https://github.com/ahmetcotur/lenktr
+
+## Özellikler
+
+- Kısa bağlantılar oluşturma, düzenleme, arşivleme ve tıklama takibi
+- Özelleştirilebilir, yayınlanabilir bio sayfaları
+- Tarih aralığı seçilebilen trafik grafikleri; link ve bio sayfasına göre detaylar
+- Sosyal medya, arama motoru, yapay zekâ, bot, yönlendirme ve doğrudan trafik sınıflandırması
+- Ülke, cihaz ve kaynak raporları; ziyaret edilen ülkeler için harita görünümü
+- E-posta doğrulamalı kayıt, şifre sıfırlama ve güvenlik bildirimleri
+- Yönetici paneli ve kullanıcı erişim denetimi
+- Türkçe ve İngilizce arayüz
+
+## Teknoloji
+
+React 19, Vite, Tailwind CSS, Express 5, Node.js 22 ve MariaDB 11. Veritabanına yalnızca sunucu erişir. Parolalar bcrypt ile saklanır; kimlik doğrulama ve kullanıcıya ait kayıtların yetkilendirmesi API tarafında yapılır.
 
 ## Yerel geliştirme
-Node.js 22 ve MariaDB 11 gerekir. `.env.example` dosyasını `.env` olarak kopyalayıp veritabanı bilgilerini doldurun.
+
+Node.js 22 ve çalışan bir MariaDB 11 sunucusu gerekir. Depoyu klonlayıp ortam dosyasını hazırlayın:
 
 ```sh
+git clone https://github.com/ahmetcotur/lenktr.git
+cd lenktr
+cp .env.example .env
 npm ci --legacy-peer-deps
-npm start
-npm run dev
 ```
-API varsayılan üretim portu 80'dir; yerel `.env` portu 3001'dir. İlk başlatmada `server/schema.sql` tabloları veri silmeden oluşturur. Tarayıcı veritabanına doğrudan erişmez. Şifreler bcrypt ile, oturum anahtarları SHA-256 ile saklanır. Kullanıcıya ait kayıtların erişimi API'de sınırlandırılır. Kısa bağlantı ve bio sayfası adresleri ortak bir ad alanında benzersizdir; sayaçlar ve ziyaret kayıtları tek işlemde güncellenir.
 
-## Coolify
-Dockerfile ile dağıtın. `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` değişkenlerini yalnızca çalışma zamanında tanımlayın. MariaDB ile aynı Docker ağına bağlayın. Kalıcı dosya alanını `/app/data/uploads` konumuna bağlayın. Sağlık kontrolü: `/api/health`.
+`.env` içindeki `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` ve `DB_NAME` değerlerini MariaDB kurulumunuza göre düzenleyin. Gerekli tablolar ilk sunucu başlangıcında `server/schema.sql` ile oluşturulur.
+
+```sh
+npm start       # API ve uygulama: http://localhost:3001
+npm run dev     # Vite geliştirme sunucusu
+```
+
+Geliştirme arayüzü API isteklerini çalışan Node sunucusuna iletir. Uygulama portu `PORT` değişkeniyle ayarlanabilir.
+
+## Dağıtım
+
+Dockerfile Coolify veya başka bir Docker platformunda kullanılabilir. Uygulama için MariaDB 11 veritabanını aynı ağda veya erişilebilir bir veritabanı sunucusunda sağlayın ve çalışma zamanında `.env.example` içindeki veritabanı değişkenlerini tanımlayın. `UPLOAD_DIR` için kalıcı disk bağlayın; üretimde örneğin `/app/data/uploads` kullanın. E-posta gönderimi için SMTP değişkenlerini, doğru `APP_URL` ve gönderen adresiyle ayarlayın.
+
+Sağlık kontrolü: `GET /api/health`.
+
+## E-posta
+
+Kayıt doğrulama, doğrulama bağlantısını yeniden gönderme, şifre sıfırlama, güvenlik bildirimleri ve iletişim formu senaryoları [e-posta kurulum notlarında](docs/email.md) açıklanmıştır. SMTP yapılandırılmadığında e-postalar MariaDB kuyruğunda bekler.
 
 ## Kontroller
+
 ```sh
+npm run lint
 npm run build
 npm test
 ```
-API testi kendi kullanıcılarını oluşturur ve temizler; ayrı test veritabanıyla çalıştırın.
 
-## Veri geçişi
-Supabase çalışma zamanı bağımlılığı yoktur. Eski veriler API dışa aktarımı veya SQL yedeğinden taşınabilir. Şifrelerin korunması için `auth.users.encrypted_password` değerleri gerekir; yönetici kullanıcı listeleme API'si bunları içermez. Görseller kalıcı yerel dosya alanına taşınmalıdır. Yedek ve erişim anahtarları Git deposuna eklenmemelidir.
+API entegrasyon testi kayıt oluşturup temizler. Üretim veritabanı yerine ayrı bir test veritabanıyla çalıştırın.
 
-## E-posta
-Kayıt/doğrulama, şifre sıfırlama, güvenlik bildirimleri ve iletişim talepleri: [kurulum ve senaryolar](docs/email.md). SMTP kurulmadan mesajlar bekler; canlı teslimat kontrolü SMTP bağlandıktan sonra yapılır.
+## Supabase'den veri taşıma
+
+Uygulamanın çalışma anında Supabase bağımlılığı yoktur. Eski Supabase verileri API dışa aktarımı veya SQL yedeğiyle taşınabilir. Kullanıcı parolalarının korunması için `auth.users.encrypted_password` değerlerine ihtiyaç vardır; yönetici kullanıcı listeleme API'si parola verisi sunmaz. Görseller `UPLOAD_DIR` altındaki kalıcı dosya alanına taşınmalıdır. Yedekleri, parolaları ve erişim anahtarlarını Git deposuna eklemeyin.
