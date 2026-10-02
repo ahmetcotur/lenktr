@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowUpRight, Ban, CheckCircle2, ChevronLeft, ChevronRight, Eye, Link2, LoaderCircle, Pencil, Search, Trash2, Users, X } from "lucide-react";
+import { AlertCircle, ArrowUpRight, Ban, CheckCircle2, ChevronLeft, ChevronRight, Eye, Link2, LoaderCircle, Pencil, Search, Send, Trash2, Users, X } from "lucide-react";
 import SEO from "../components/SEO";
 
 async function getData(url) {
@@ -28,6 +28,11 @@ export default function AdminPage() {
   const [editor, setEditor] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [noticeType, setNoticeType] = useState("system");
+  const [noticeAudience, setNoticeAudience] = useState("all");
+  const [noticeContent, setNoticeContent] = useState("");
+  const [noticeSending, setNoticeSending] = useState(false);
+  const [noticeResult, setNoticeResult] = useState("");
   const pageSize = 20;
 
   useEffect(() => {
@@ -165,6 +170,32 @@ export default function AdminPage() {
     setEditor((current) => ({ ...current, values: { ...current.values, [key]: value } }));
   }
 
+  async function sendNotification(event) {
+    event.preventDefault();
+    if (noticeSending || (noticeAudience === "user" && !selected)) return;
+    if (noticeAudience === "all" && !window.confirm("Bildirim tüm aktif hesaplara gönderilecek. Devam edilsin mi?")) return;
+    setNoticeSending(true);
+    setNoticeResult("");
+    setError("");
+    try {
+      const response = await fetch("/api/admin/notifications", {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          type: noticeType,
+          content: noticeContent,
+          audience: noticeAudience,
+          ...(noticeAudience === "user" ? { user_id: selected.id } : {}),
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error?.message || "Bildirim gönderilemedi.");
+      setNoticeResult(`${number(payload.data.sent)} kullanıcıya bildirim gönderildi.`);
+      setNoticeContent("");
+    } catch (cause) { setError(cause.message); }
+    finally { setNoticeSending(false); }
+  }
+
   return (
     <div className="space-y-7">
       <SEO title="Yönetim paneli | LENK.TR" description="LENK.TR kullanıcı ve içerik yönetimi." url="/admin" noIndex />
@@ -178,6 +209,16 @@ export default function AdminPage() {
       <section aria-label="Genel istatistikler" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map(([label, value, Icon]) => <article key={label} className="rounded-2xl border border-white/5 bg-[#101319] p-4 sm:p-5"><div className="flex items-center justify-between"><span className="text-xs font-medium text-zinc-400 sm:text-sm">{label}</span><Icon size={17} className="text-blue-400" /></div><p className="mt-3 text-2xl font-bold text-white">{value == null ? "—" : number(value)}</p></article>)}
       </section>
+
+      <form onSubmit={sendNotification} className="space-y-4 rounded-2xl border border-white/5 bg-[#101319] p-4 sm:p-5">
+        <div><h2 className="font-semibold text-white">Kullanıcılara bildirim gönder</h2><p className="mt-1 text-sm text-zinc-500">Bildirim, alıcının LENK.TR bildirim merkezinde görünür. Saatte en fazla 20 gönderim yapılabilir.</p></div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="space-y-1.5 text-xs font-medium text-zinc-400">Alıcı<select value={noticeAudience} onChange={(event) => { setNoticeAudience(event.target.value); setNoticeResult(""); }} className="w-full rounded-xl border border-white/10 bg-[#0b0d12] px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500"><option value="all">Tüm aktif kullanıcılar</option><option value="user" disabled={!selected}>Seçili kullanıcı: {selected?.email || "önce kullanıcı seç"}</option></select></label>
+          <label className="space-y-1.5 text-xs font-medium text-zinc-400">Tür<select value={noticeType} onChange={(event) => setNoticeType(event.target.value)} className="w-full rounded-xl border border-white/10 bg-[#0b0d12] px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500"><option value="system">Sistem bildirimi</option><option value="alert">Uyarı</option></select></label>
+        </div>
+        <label className="block space-y-1.5 text-xs font-medium text-zinc-400">Bildirim metni<textarea required minLength={1} maxLength={1000} rows={3} value={noticeContent} onChange={(event) => setNoticeContent(event.target.value)} placeholder="Kullanıcılara iletilecek mesajı yazın…" className="w-full resize-y rounded-xl border border-white/10 bg-[#0b0d12] px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-blue-500" /><span className="block text-right text-[11px] text-zinc-600">{noticeContent.length}/1000</span></label>
+        <div className="flex flex-wrap items-center justify-between gap-3"><p role="status" className="text-sm text-emerald-300">{noticeResult}</p><button type="submit" disabled={noticeSending || !noticeContent.trim() || (noticeAudience === "user" && !selected)} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{noticeSending ? <LoaderCircle size={16} className="animate-spin" /> : <Send size={15} />}{noticeAudience === "all" ? "Herkese gönder" : "Seçili kullanıcıya gönder"}</button></div>
+      </form>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.4fr)]">
         <section className="min-w-0 overflow-hidden rounded-2xl border border-white/5 bg-[#101319]">

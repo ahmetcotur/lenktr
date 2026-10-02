@@ -280,6 +280,33 @@ app.delete("/api/admin/users/:id", admin, async (req, res) => {
   });
   res.json({ data: { id, deleted: true } });
 });
+app.post(
+  "/api/admin/notifications",
+  admin,
+  rateLimit({ windowMs: 60 * 60 * 1000, limit: 20, standardHeaders: "draft-8", legacyHeaders: false }),
+  async (req, res) => {
+    const type = req.body?.type;
+    const content = String(req.body?.content || "").trim();
+    if (!["system", "alert"].includes(type)) throw fail(400, "Bildirim türü geçersiz.");
+    if (!content || content.length > 1000) throw fail(400, "Bildirim metni 1–1000 karakter arasında olmalı.");
+    let result;
+    if (req.body?.audience === "all") {
+      [result] = await pool.execute(
+        "INSERT INTO notifications(id,user_id,type,content) SELECT UUID(),id,?,? FROM users WHERE access_disabled=0",
+        [type, content],
+      );
+    } else if (req.body?.audience === "user" && /^[a-f0-9-]{36}$/i.test(String(req.body.user_id || ""))) {
+      [result] = await pool.execute(
+        "INSERT INTO notifications(id,user_id,type,content) SELECT UUID(),id,?,? FROM users WHERE id=? AND access_disabled=0",
+        [type, content, req.body.user_id],
+      );
+      if (!result.affectedRows) throw fail(404, "Aktif kullanıcı bulunamadı.");
+    } else {
+      throw fail(400, "Bildirim alıcısı geçersiz.");
+    }
+    res.status(201).json({ data: { sent: Number(result.affectedRows), type } });
+  },
+);
 const columns = {
   notifications: ["id", "user_id", "type", "content", "is_read", "created_at"],
   links: [
