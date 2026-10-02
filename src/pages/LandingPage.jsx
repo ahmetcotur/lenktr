@@ -207,7 +207,7 @@ const LandingPage = () => {
         <div className="min-h-screen bg-[#08090D] text-white selection:bg-blue-500/30 font-sans">
             {/* SEO Meta Tags */}
             <SEO
-                title="LENK.TR — Kısa bağlantılar ve bio sayfaları"
+                title={t('hero.seoTitle')}
                 description={t('hero.desc')}
                 keywords="kısa bağlantı, link yönetimi, bio sayfası, bağlantı istatistikleri, link in bio"
                 url="/"
@@ -318,8 +318,8 @@ const LandingPage = () => {
                         </div>
                         <div className="relative rounded-xl overflow-hidden border border-white/10 mb-4 group">
                             <img
-                                src="/screenshots/dashboard.png"
-                                alt="Dashboard"
+                                src="/screenshots/link-manager.png"
+                                alt={t('howItWorks.step1.title')}
                                 className="w-full h-auto group-hover:scale-105 transition-transform duration-700"
                             />
                         </div>
@@ -391,8 +391,8 @@ const LandingPage = () => {
                             </div>
                             <div className="relative rounded-xl overflow-hidden border border-white/10 group">
                                 <img
-                                    src="/screenshots/link-manager.png"
-                                    alt="Link Manager"
+                                    src="/screenshots/dashboard.png"
+                                    alt={t('howItWorks.step3.title')}
                                     className="w-full h-auto group-hover:scale-105 transition-transform duration-700"
                                 />
                             </div>
@@ -436,8 +436,8 @@ const LandingPage = () => {
                         <div className="order-1 md:order-2">
                             <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
                                 <img
-                                    src="/screenshots/dashboard.png"
-                                    alt="Dashboard Overview"
+                                    src="/screenshots/link-manager.png"
+                                    alt={t('howItWorks.step1.title')}
                                     className="w-full h-auto group-hover:scale-105 transition-transform duration-700"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-blue-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -522,8 +522,8 @@ const LandingPage = () => {
                         <div className="order-1 md:order-2">
                             <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
                                 <img
-                                    src="/screenshots/link-manager.png"
-                                    alt="Link Manager"
+                                    src="/screenshots/dashboard.png"
+                                    alt={t('howItWorks.step3.title')}
                                     className="w-full h-auto group-hover:scale-105 transition-transform duration-700"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-lime-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>

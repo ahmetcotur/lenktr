@@ -26,9 +26,10 @@ i18n
                     },
                     hero: {
                         badge: 'Version 2.4 Now Live',
-                        title1: 'Smart Link',
-                        title2: 'Management.',
-                        desc: 'Fast, reliable, and beautiful link management for your brand. Sub-100ms load times. Professional analytics.',
+                        title1: 'One link to share.',
+                        title2: 'The whole story.',
+                        desc: 'Turn every destination into a branded short link, bring your best work together on one bio page, then see which channels and audiences bring people in.',
+                        seoTitle: 'LENK.TR — Short links, bio pages & analytics',
                         ctaClaim: 'Get Started Free',
                         ctaDemo: 'How it Works'
                     },
@@ -39,14 +40,14 @@ i18n
                         desc: 'From minimalist glassmorphism to high-energy neon grids. Express your identity with 100+ customizable themes.'
                     },
                     features: {
-                        badge: 'System Capabilities',
-                        title: 'Total Control.',
-                        custom: 'Infinite Design',
-                        customDesc: 'Create unique designs that reflect your brand. Customize every pixel with colors, fonts, and glass effects.',
-                        tools: 'Smart Link Tools',
-                        toolsDesc: 'Manage your digital presence at full capacity with encrypted links, scheduled access, and custom slug support.',
-                        tracking: 'Retargeting & Pixel',
-                        trackingDesc: 'Understand your audience behavior with Facebook, TikTok, and Google pixels to multiply your ad efficiency.'
+                        badge: 'One connected workflow',
+                        title: 'Everything follows the link.',
+                        custom: 'Make it yours',
+                        customDesc: 'Give your bio page a look that fits your identity with flexible themes, colors, and layouts.',
+                        tools: 'Share with confidence',
+                        toolsDesc: 'Use custom short links, QR codes, campaign tags, scheduled access, and password protection when you need them.',
+                        tracking: 'Know what works',
+                        trackingDesc: 'Compare clicks and bio views by link, traffic source, country, device, and time period.'
                     },
                     stats: {
                         s1l: 'Pixel Support',
@@ -60,30 +61,30 @@ i18n
                     },
                     howItWorks: {
                         badge: 'HOW IT WORKS',
-                        title: 'Get Started in Minutes',
-                        desc: 'Create your bio page, manage links, and track performance—all in one place.',
+                        title: 'From a share to a clear picture',
+                        desc: 'A campaign link goes out, your bio page gives every destination a home, and analytics show what happened next.',
                         step1: {
-                            title: 'Access Your Dashboard',
-                            desc: 'Sign up and instantly access your personalized dashboard. View all your links, bio pages, and analytics in one clean interface.',
-                            feature1: 'Quick overview of all your links',
-                            feature2: 'Real-time click statistics',
-                            feature3: 'Easy navigation to all features'
+                            title: 'Create a link worth sharing',
+                            desc: 'Give a long destination a clean, memorable address. Add campaign tags, pixels, a QR code, or rules for when and where it should open.',
+                            feature1: 'Branded short links and custom slugs',
+                            feature2: 'UTM tags and ad pixel support',
+                            feature3: 'Customizable QR codes you can download'
                         },
                         step2: {
-                            title: 'Design Your Bio Page',
-                            desc: 'Choose from stunning themes and customize every detail. Drag-and-drop your links, add social icons, and make it yours.',
-                            feature1: '5+ premium themes to choose from',
-                            feature2: 'Drag-and-drop link management',
-                            feature3: 'Live preview as you edit'
+                            title: 'Bring your destinations together',
+                            desc: 'Make one bio page the home for your work, social profiles, offers, and important links. Choose a theme and shape it around your identity.',
+                            feature1: 'One page for all your important links',
+                            feature2: 'Themes, profile details, and social links',
+                            feature3: 'A single address for every channel'
                         },
                         step3: {
-                            title: 'Track & Optimize',
-                            desc: 'Monitor your link performance with detailed analytics. See what works and optimize your strategy.',
-                            feature1: 'Real-time click tracking',
-                            feature2: 'Custom short links with QR codes',
-                            feature3: 'Detailed performance metrics'
+                            title: 'See who arrived and from where',
+                            desc: 'Follow clicks on each short link and visits to each bio page. Compare traffic over time and understand the sources, countries, and devices behind it.',
+                            feature1: 'Separate performance for each link and bio page',
+                            feature2: 'Social, search, AI, bot, and direct traffic sources',
+                            feature3: 'Country, device, and time-range breakdowns'
                         },
-                        cta: 'Start Building Now'
+                        cta: 'Start your link journey'
                     },
                     footer: {
                         tagline: 'The ultimate link management platform for modern creators.',
@@ -812,9 +813,10 @@ i18n
                     },
                     hero: {
                         badge: 'Versiyon 2.4 Yayında',
-                        title1: 'Akıllı Link',
-                        title2: 'Yönetimi.',
-                        desc: 'Markanız için hızlı, güvenilir ve güzel link yönetimi. 100ms altı yükleme süreleri. Profesyonel analizler.',
+                        title1: 'Paylaşmak için tek link.',
+                        title2: 'Tüm yolculuğu gör.',
+                        desc: 'Her hedefi markalı kısa bir linke dönüştür, içeriklerini tek bio sayfasında topla; ardından ziyaretçilerin hangi kanaldan ve nereden geldiğini gör.',
+                        seoTitle: 'LENK.TR — Kısa link, bio sayfası ve analiz',
                         ctaClaim: 'Ücretsiz Başla',
                         ctaDemo: 'Nasıl Çalışır'
                     },
@@ -825,14 +827,14 @@ i18n
                         desc: 'Minimalist glassmorphism\'den yüksek enerjili neon ızgaralara. 100+ özelleştirilebilir tema ile kimliğinizi ifade edin.'
                     },
                     features: {
-                        badge: 'Sistem Kabiliyetleri',
-                        title: 'Kontrol Sende.',
-                        custom: 'Sınırsız Tasarım',
-                        customDesc: 'Markanızı yansıtan benzersiz tasarımlar oluşturun. Renkler, fontlar ve cam efektleriyle her pikseli özelleştirin.',
-                        tools: 'Akıllı Link Araçları',
-                        toolsDesc: 'Şifreli linkler, zamanlanmış erişim ve özel slug desteğiyle dijital varlığınızı tam kapasite yönetin.',
-                        tracking: 'Takip & Piksel',
-                        trackingDesc: 'Facebook, TikTok ve Google pikselleriyle kitlenizin davranışını anlayın ve reklam verimliliğinizi katlayın.'
+                        badge: 'Birbirine bağlı tek akış',
+                        title: 'Linkten başlayan bütün hikâye.',
+                        custom: 'Kendine göre tasarla',
+                        customDesc: 'Esnek temalar, renkler ve düzenlerle bio sayfanın görünümünü kendi kimliğine uyarla.',
+                        tools: 'Güvenle paylaş',
+                        toolsDesc: 'Özel kısa link, QR kod, kampanya etiketleri, zamanlama ve gerektiğinde parola koruması kullan.',
+                        tracking: 'Ne işe yarıyor, gör',
+                        trackingDesc: 'Tıklama ve bio ziyaretlerini linke, trafik kaynağına, ülkeye, cihaza ve zaman aralığına göre karşılaştır.'
                     },
                     stats: {
                         s1l: 'Piksel Desteği',
@@ -846,30 +848,30 @@ i18n
                     },
                     howItWorks: {
                         badge: 'NASIL ÇALIŞIR',
-                        title: 'Dakikalar İçinde Başlayın',
-                        desc: 'Bio sayfanızı oluşturun, linkleri yönetin ve performansı takip edin—hepsi tek yerde.',
+                        title: 'Paylaşımdan net bir tabloya',
+                        desc: 'Kampanya linkin yayına çıkar, bio sayfan tüm hedeflere bir yuva olur, analizler de sonrasında neler olduğunu gösterir.',
                         step1: {
-                            title: 'Kontrol Panelinize Erişin',
-                            desc: 'Kaydolun ve anında kişiselleştirilmiş kontrol panelinize erişin. Tüm linklerinizi, bio sayfalarınızı ve analizlerinizi tek bir temiz arayüzde görüntüleyin.',
-                            feature1: 'Tüm linklerinizin hızlı özeti',
-                            feature2: 'Gerçek zamanlı tıklama istatistikleri',
-                            feature3: 'Tüm özelliklere kolay navigasyon'
+                            title: 'Paylaşmaya değer bir link oluştur',
+                            desc: 'Uzun hedef adresini temiz ve akılda kalıcı bir linke dönüştür. Kampanya etiketleri, pikseller ve QR kod ekle; ne zaman ve nerede açılacağını belirle.',
+                            feature1: 'Markalı kısa linkler ve özel adresler',
+                            feature2: 'UTM etiketleri ve reklam pikseli desteği',
+                            feature3: 'İndirilebilir, özelleştirilebilir QR kodlar'
                         },
                         step2: {
-                            title: 'Bio Sayfanızı Tasarlayın',
-                            desc: 'Muhteşem temalar arasından seçim yapın ve her detayı özelleştirin. Linklerinizi sürükle-bırak ile yönetin, sosyal ikonlar ekleyin ve kendinize ait kılın.',
-                            feature1: 'Seçebileceğiniz 5+ premium tema',
-                            feature2: 'Sürükle-bırak link yönetimi',
-                            feature3: 'Düzenlerken canlı önizleme'
+                            title: 'Hedeflerini tek yerde buluştur',
+                            desc: 'İşlerin, sosyal profillerin, kampanyaların ve önemli linklerin için bir bio sayfası oluştur. Bir tema seç ve görünümünü kendi kimliğine göre düzenle.',
+                            feature1: 'Önemli linklerin için tek sayfa',
+                            feature2: 'Temalar, profil bilgileri ve sosyal linkler',
+                            feature3: 'Tüm kanallarda paylaşabileceğin tek adres'
                         },
                         step3: {
-                            title: 'Takip Edin & Optimize Edin',
-                            desc: 'Link performansınızı detaylı analizlerle izleyin. Neyin işe yaradığını görün ve stratejinizi optimize edin.',
-                            feature1: 'Gerçek zamanlı tıklama takibi',
-                            feature2: 'QR kodlu özel kısa linkler',
-                            feature3: 'Detaylı performans metrikleri'
+                            title: 'Kim, nereden geldi; öğren',
+                            desc: 'Her kısa linkin tıklamasını ve her bio sayfasının ziyaretini izle. Trafiği zaman içinde karşılaştır; kaynakları, ülkeleri ve cihazları anla.',
+                            feature1: 'Her link ve bio sayfası için ayrı performans',
+                            feature2: 'Sosyal, arama, yapay zekâ, bot ve doğrudan trafik',
+                            feature3: 'Ülke, cihaz ve zaman aralığı kırılımları'
                         },
-                        cta: 'Hemen Başla'
+                        cta: 'Link yolculuğunu başlat'
                     },
                     footer: {
                         tagline: 'Modern içerik üreticileri için nihai link yönetim platformu.',
