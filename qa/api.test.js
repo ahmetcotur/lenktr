@@ -163,6 +163,12 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
     assert.equal(counted.body.data.clicks, 8);
     const traffic = await api("/api/query", { table: "traffic_logs" }, cookieA);
     assert.equal(traffic.body.data.length, 8);
+    const analytics = await api("/api/analytics?range=7d", undefined, cookieA);
+    assert.equal(analytics.status, 200);
+    assert.equal(analytics.body.data.totals.clicks, 8);
+    assert.equal(analytics.body.data.totals.events, 8);
+    assert.equal(analytics.body.data.top_items[0].slug, slug);
+    assert.equal((await api("/api/analytics?range=7d", undefined, cookieB)).body.data.totals.events, 0);
     const bioSlug = "qa-" + randomUUID();
     const bio = await api(
       "/api/query",

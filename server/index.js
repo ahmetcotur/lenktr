@@ -117,6 +117,72 @@ app.use("/api", async (req, res, next) => {
   }
 });
 app.use("/api", accountRoutes);
+app.get("/api/analytics", auth, async (req, res) => {
+  const range = String(req.query.range || "7d");
+  const ranges = {
+    "12h": { amount: 12, unit: "hour", format: "%Y-%m-%d %H:00:00" },
+    "24h": { amount: 24, unit: "hour", format: "%Y-%m-%d %H:00:00" },
+    "7d": { amount: 7, unit: "day", format: "%Y-%m-%d 00:00:00" },
+    "30d": { amount: 30, unit: "day", format: "%Y-%m-%d 00:00:00" },
+  };
+  const selected = ranges[range];
+  if (!selected) throw fail(400, "Geçersiz analitik tarih aralığı.");
+  const start = new Date(Date.now() - selected.amount * (selected.unit === "hour" ? 3600000 : 86400000))
+    .toISOString().slice(0, 23).replace("T", " ");
+  const userId = req.user.id;
+  const [totalsRows, seriesRows, sourceRows, deviceRows, itemRows] = await Promise.all([
+    pool.execute(
+      "SELECT COUNT(*) AS events, COALESCE(SUM(type='link'),0) AS clicks, COALESCE(SUM(type='bio'),0) AS views FROM traffic_logs WHERE user_id=? AND created_at>=?",
+      [userId, start],
+    ),
+    pool.execute(
+      `SELECT DATE_FORMAT(created_at, ?) AS bucket,COUNT(*) AS events,COALESCE(SUM(type='link'),0) AS clicks,COALESCE(SUM(type='bio'),0) AS views FROM traffic_logs WHERE user_id=? AND created_at>=? GROUP BY bucket ORDER BY bucket`,
+      [selected.format, userId, start],
+    ),
+    pool.execute(
+      "SELECT referrer,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? GROUP BY referrer",
+      [userId, start],
+    ),
+    pool.execute(
+      "SELECT CASE WHEN browser='' THEN 'other' WHEN browser REGEXP 'iPad|Tablet|Kindle|Silk|PlayBook' OR (browser LIKE '%Android%' AND browser NOT LIKE '%Mobile%') THEN 'tablet' WHEN browser REGEXP 'Mobi|iPhone|iPod|Android' THEN 'mobile' ELSE 'desktop' END AS device,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? GROUP BY device",
+      [userId, start],
+    ),
+    pool.execute(
+      `SELECT tl.type,tl.link_id,tl.bio_page_id,l.title,l.short_slug,b.profile_title,b.slug,COUNT(*) AS events FROM traffic_logs tl LEFT JOIN links l ON l.id=tl.link_id LEFT JOIN bio_pages b ON b.id=tl.bio_page_id WHERE tl.user_id=? AND tl.created_at>=? GROUP BY tl.type,tl.link_id,tl.bio_page_id,l.title,l.short_slug,b.profile_title,b.slug ORDER BY events DESC LIMIT 5`,
+      [userId, start],
+    ),
+  ]);
+  const totals = totalsRows[0][0];
+  const eventCount = Number(totals.events);
+  const sources = new Map();
+  for (const row of sourceRows[0]) {
+    let name = "direct";
+    const value = String(row.referrer || "").trim();
+    if (value && value.toLowerCase() !== "direct") {
+      try {
+        name = new URL(value.startsWith("//") ? `https:${value}` : value.includes("://") ? value : `https://${value}`).hostname.toLowerCase().replace(/^www\./, "") || "other";
+      } catch { name = "other"; }
+    }
+    sources.set(name, (sources.get(name) || 0) + Number(row.events));
+  }
+  const topSources = [...sources].map(([name, count]) => ({
+    name, traffic: count, percent: eventCount ? Math.round(count / eventCount * 100) : 0,
+  })).sort((a, b) => b.traffic - a.traffic).slice(0, 5);
+  const devices = deviceRows[0].map((row) => ({ device: row.device || "other", count: Number(row.events) }));
+  res.json({ data: {
+    range, start_at: `${start.replace(" ", "T")}Z`, totals: {
+      events: eventCount, clicks: Number(totals.clicks), views: Number(totals.views),
+    },
+    series: seriesRows[0].map((row) => ({ ...row, events: Number(row.events), clicks: Number(row.clicks), views: Number(row.views) })),
+    sources: topSources, devices,
+    top_items: itemRows[0].map((row) => ({
+      type: row.type,
+      name: (row.type === "link" ? row.title : row.profile_title) || (row.type === "link" ? row.short_slug : row.slug) || "—",
+      slug: row.type === "link" ? row.short_slug : row.slug,
+      val: Number(row.events),
+    })),
+  } });
+});
 app.get("/api/admin/session", admin, (req, res) => {
   res.json({ data: { user: { id: req.user.id, email: req.user.email } } });
 });
@@ -534,7 +600,13 @@ app.post("/api/resolve/:slug", async (req, res) => {
         ref.kind === "bio" ? row.id : null,
         ref.kind,
         String(req.body.referrer || "direct").slice(0, 2000),
-        /Mobi|Android/i.test(agent) ? "mobile" : "desktop",
+        /iPad|Tablet|Kindle|Silk|PlayBook/i.test(agent) || (/Android/i.test(agent) && !/Mobile/i.test(agent))
+          ? "tablet"
+          : /Mobi|iPhone|iPod|Android/i.test(agent)
+            ? "mobile"
+            : agent
+              ? "desktop"
+              : "other",
         agent.slice(0, 200),
       ],
     );
