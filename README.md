@@ -23,3 +23,6 @@ API testi kendi kullanıcılarını oluşturur ve temizler; ayrı test veritaban
 
 ## Veri geçişi
 Supabase çalışma zamanı bağımlılığı yoktur. Eski veriler API dışa aktarımı veya SQL yedeğinden taşınabilir. Şifrelerin korunması için `auth.users.encrypted_password` değerleri gerekir; yönetici kullanıcı listeleme API'si bunları içermez. Görseller kalıcı yerel dosya alanına taşınmalıdır. Yedek ve erişim anahtarları Git deposuna eklenmemelidir.
+
+## E-posta
+Kayıt/doğrulama, şifre sıfırlama, güvenlik bildirimleri ve iletişim talepleri: [kurulum ve senaryolar](docs/email.md). SMTP kurulmadan mesajlar bekler; canlı teslimat kontrolü SMTP bağlandıktan sonra yapılır.

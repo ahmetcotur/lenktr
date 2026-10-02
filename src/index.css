@@ -173,3 +173,8 @@ h6 {
 .animate-slide-in-right {
   animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+/* Keyboard navigation and reduced motion preferences apply throughout the app. */
+:focus-visible { outline: 2px solid #60a5fa; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

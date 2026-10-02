@@ -105,6 +105,7 @@ const LoginPage = () => {
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{t('login.passwordLabel')}</label>
+                                    <Link to="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300">{t('login.forgotPassword')}</Link>
                                 </div>
                                 <div className="relative group">
                                     <input

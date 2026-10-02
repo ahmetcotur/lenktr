@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {loading ? <div role="status" className="min-h-screen bg-[#08090D] grid place-items-center text-zinc-400"><span className="flex gap-3 items-center"><span className="w-5 h-5 rounded-full border-2 border-blue-500/20 border-t-blue-500 animate-spin" />Hesabınız yükleniyor…</span></div> : children}
         </AuthContext.Provider>
     );
 };

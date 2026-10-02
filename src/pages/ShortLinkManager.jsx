@@ -23,7 +23,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import BoostOverlay from '../components/overlays/BoostOverlay';
 import StatsOverlay from '../components/overlays/StatsOverlay';
 import EditLinkOverlay from '../components/overlays/EditLinkOverlay';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createClient } from '../utils/api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +33,9 @@ const api = createClient();
 const ShortLinkManager = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const search = searchParams.get('q') || '';
+    const matches = link => (link.title + ' ' + link.short_slug + ' ' + link.original_url).toLocaleLowerCase().includes(search.toLocaleLowerCase());
     const { user } = useAuth();
     const [activeOverlay, setActiveOverlay] = React.useState({ type: null, link: null });
     const [links, setLinks] = React.useState([]);
@@ -211,6 +214,8 @@ const ShortLinkManager = () => {
                     <input
                         type="text"
                         placeholder={t('linksPage.searchPlaceholder')}
+                        value={search}
+                        onChange={event => setSearchParams(event.target.value ? { q: event.target.value } : {})}
                         className="w-full bg-zinc-900/30 border border-white/5 rounded-2xl pl-14 pr-6 py-4 text-base text-white placeholder:text-zinc-700 focus:outline-none focus:border-blue-500/40 focus:bg-zinc-900/50 transition-all shadow-inner"
                     />
                 </div>
@@ -249,7 +254,7 @@ const ShortLinkManager = () => {
                             <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
                             <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">{t('linksPage.loading')}</p>
                         </div>
-                    ) : links.filter(link => {
+                    ) : links.filter(matches).filter(link => {
                         if (filterStatus === 'active') return !link.is_archived;
                         if (filterStatus === 'archived') return link.is_archived;
                         return true;
@@ -265,7 +270,7 @@ const ShortLinkManager = () => {
                             </Button>
                         </div>
                     ) : (
-                        links.filter(link => {
+                        links.filter(matches).filter(link => {
                             if (filterStatus === 'active') return !link.is_archived;
                             if (filterStatus === 'archived') return link.is_archived;
                             return true;
