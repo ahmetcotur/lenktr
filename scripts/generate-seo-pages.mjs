@@ -18,6 +18,7 @@ const pages = {
   "forgot-password": ["Şifre sıfırlama | LENK.TR", "LENK.TR hesabınızın şifresini sıfırlayın.", true],
   account: ["Hesap işlemi | LENK.TR", "LENK.TR hesap doğrulama ve şifre işlemleri.", true],
   upgrade: ["Planı yükselt | LENK.TR", "LENK.TR hesabınızın planını yönetin.", true],
+  admin: ["Yönetim paneli | LENK.TR", "LENK.TR yönetim paneli.", true],
 };
 const escapeAttribute = (value) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
 function replaceMeta(html, expression, replacement) {

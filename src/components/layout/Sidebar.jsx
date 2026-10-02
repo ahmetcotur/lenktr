@@ -7,6 +7,7 @@ import {
   Settings,
   LogOut,
   Languages,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -25,6 +26,9 @@ export default function Sidebar({ onClose }) {
     { icon: UserCircle, label: t("sidebar.menu.bioPage"), path: "/bio" },
     { icon: BarChart3, label: t("sidebar.menu.analytics"), path: "/analytics" },
     { icon: Settings, label: t("sidebar.menu.settings"), path: "/settings" },
+    ...(user?.app_metadata?.role === "admin"
+      ? [{ icon: ShieldCheck, label: "Yönetim", path: "/admin" }]
+      : []),
   ];
   async function logout() {
     const { error } = await signOut();

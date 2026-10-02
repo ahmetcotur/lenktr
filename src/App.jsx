@@ -27,9 +27,11 @@ const SecurityPage = lazy(() => import("./pages/SecurityPage"));
 
 const UpgradePlan = lazy(() => import("./pages/UpgradePlan"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
 const RedirectHandler = lazy(() => import("./pages/RedirectHandler"));
 
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import AdminRoute from "./components/auth/AdminRoute";
 import { HelmetProvider } from "react-helmet-async";
 
 function App() {
@@ -122,6 +124,18 @@ function App() {
                   <AppLayout>
                     <SettingsPage />
                   </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <AppLayout>
+                      <AdminPage />
+                    </AppLayout>
+                  </AdminRoute>
                 </ProtectedRoute>
               }
             />

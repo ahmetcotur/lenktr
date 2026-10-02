@@ -311,6 +311,8 @@ router.post("/auth/login", authLimiter, async (req, res) => {
     !(await bcrypt.compare(req.body.password, rows[0].password_hash))
   )
     throw fail(401, "E-posta veya şifre hatalı.");
+  if (rows[0].access_disabled)
+    throw fail(403, "Bu hesabın erişimi yönetici tarafından kısıtlandı.");
   await session(req, res, rows[0]);
 });
 router.post("/auth/logout", async (req, res) => {

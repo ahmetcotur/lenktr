@@ -10,6 +10,7 @@ Disallow: /login
 Disallow: /register
 Disallow: /forgot-password
 Disallow: /account
+Disallow: /admin
 Disallow: /api
 Disallow: /uploads
 

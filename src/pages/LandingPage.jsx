@@ -32,7 +32,7 @@ const LanguageSwitcher = () => {
 };
 
 const LandingPage = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const location = useLocation();
     useEffect(() => {
         if (!location.hash) return;
@@ -648,6 +648,17 @@ const LandingPage = () => {
                             />
                         ))}
                     </div>
+                </div>
+            </section>
+
+            <section className="relative z-10 border-t border-white/5 bg-[#0B0D12] px-4 py-12 sm:px-6 md:py-16">
+                <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+                    <div>
+                        <Badge variant="success" className="mb-4">{i18n.language.startsWith('tr') ? 'Ücretsiz başlangıç' : 'Free to start'}</Badge>
+                        <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{i18n.language.startsWith('tr') ? 'Bağlantılarını ücretsiz yönet.' : 'Manage your links for free.'}</h2>
+                        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">{i18n.language.startsWith('tr') ? 'Ücretsiz hesap oluştur; kısa bağlantılarını, bio sayfanı ve temel tıklama istatistiklerini tek panelden kullan. Kayıt için ödeme bilgisi gerekmez.' : 'Create a free account to manage short links, publish a bio page, and view click statistics from one dashboard. No payment details are needed to sign up.'}</p>
+                    </div>
+                    <Link to="/register" className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500">{i18n.language.startsWith('tr') ? 'Ücretsiz hesap oluştur' : 'Create a free account'} <ArrowRight size={17} /></Link>
                 </div>
             </section>
 

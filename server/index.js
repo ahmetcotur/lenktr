@@ -1,6 +1,6 @@
 import express from "express";
 import accountRoutes from "./account.js";
-import { hash, fail, parse, auth } from "./security.js";
+import { hash, fail, parse, auth, admin } from "./security.js";
 import { pool } from "./db.js";
 import { startMailWorker } from "./mail.js";
 export { pool };
@@ -34,6 +34,7 @@ const reserved = new Set([
   "privacy",
   "security",
   "account",
+  "admin",
   "forgot-password",
 ]);
 function slugCheck(value) {
@@ -102,6 +103,13 @@ app.use("/api", async (req, res, next) => {
         [hash(token)],
       );
       req.user = rows[0];
+      if (req.user?.access_disabled) {
+        await pool.execute("DELETE FROM sessions WHERE token_hash=?", [hash(token)]);
+        res.clearCookie("lenk_session", { path: "/" });
+        req.user = null;
+        if (req.path !== "/auth/session" && req.path !== "/auth/logout")
+          return res.status(403).json({ error: { message: "Bu hesabın erişimi yönetici tarafından kısıtlandı." } });
+      }
     }
     next();
   } catch (e) {
@@ -109,6 +117,72 @@ app.use("/api", async (req, res, next) => {
   }
 });
 app.use("/api", accountRoutes);
+app.get("/api/admin/session", admin, (req, res) => {
+  res.json({ data: { user: { id: req.user.id, email: req.user.email } } });
+});
+app.get("/api/admin/overview", admin, async (req, res) => {
+  const [[stats]] = await pool.query(
+    "SELECT (SELECT COUNT(*) FROM users) AS users,(SELECT COUNT(*) FROM links) AS links,(SELECT COUNT(*) FROM bio_pages) AS bio_pages,(SELECT COALESCE(SUM(clicks),0) FROM links) AS clicks,(SELECT COALESCE(SUM(views),0) FROM bio_pages) AS views",
+  );
+  res.json({ data: Object.fromEntries(Object.entries(stats).map(([key, value]) => [key, Number(value)])) });
+});
+app.get("/api/admin/users", admin, async (req, res) => {
+  const page = Math.max(1, Math.min(100000, Number(req.query.page) || 1));
+  const pageSize = Math.max(1, Math.min(50, Number(req.query.pageSize) || 20));
+  const search = String(req.query.search || "").trim().slice(0, 120);
+  const where = search ? "WHERE u.email LIKE ? OR p.full_name LIKE ?" : "";
+  const term = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
+  const filters = search ? [term, term] : [];
+  const [[counts], [users]] = await Promise.all([
+    pool.execute(
+      `SELECT COUNT(*) AS total FROM users u LEFT JOIN profiles p ON p.id=u.id ${where}`,
+      filters,
+    ),
+    pool.execute(
+      `SELECT u.id,u.email,p.full_name,u.created_at,u.access_disabled,(SELECT COUNT(*) FROM links l WHERE l.user_id=u.id) AS links_count,(SELECT COUNT(*) FROM bio_pages b WHERE b.user_id=u.id) AS bio_pages_count FROM users u LEFT JOIN profiles p ON p.id=u.id ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
+      [...filters, pageSize, (page - 1) * pageSize],
+    ),
+  ]);
+  res.json({
+    data: {
+      users: users.map((user) => ({ ...user, links_count: Number(user.links_count), bio_pages_count: Number(user.bio_pages_count) })),
+      total: Number(counts[0].total),
+      page,
+      pageSize,
+    },
+  });
+});
+app.get("/api/admin/users/:id", admin, async (req, res) => {
+  if (!/^[a-f0-9-]{36}$/i.test(req.params.id))
+    throw fail(400, "Geçersiz kullanıcı kimliği.");
+  const [users] = await pool.execute(
+    "SELECT u.id,u.email,p.full_name,p.avatar_url,u.created_at,u.access_disabled,u.access_disabled_reason,u.access_disabled_at FROM users u LEFT JOIN profiles p ON p.id=u.id WHERE u.id=? LIMIT 1",
+    [req.params.id],
+  );
+  if (!users[0]) throw fail(404, "Kullanıcı bulunamadı.");
+  const [[links], [bioPages]] = await Promise.all([
+    pool.execute("SELECT id,title,short_slug,original_url,clicks,is_archived,created_at FROM links WHERE user_id=? ORDER BY created_at DESC LIMIT 200", [req.params.id]),
+    pool.execute("SELECT id,slug,profile_title,profile_bio,is_published,views,created_at FROM bio_pages WHERE user_id=? ORDER BY created_at DESC LIMIT 100", [req.params.id]),
+  ]);
+  res.json({ data: { user: users[0], links, bio_pages: bioPages } });
+});
+app.patch("/api/admin/users/:id/access", admin, async (req, res) => {
+  if (!/^[a-f0-9-]{36}$/i.test(req.params.id))
+    throw fail(400, "Geçersiz kullanıcı kimliği.");
+  if (req.params.id === req.user.id)
+    throw fail(400, "Kendi hesabınızın erişimini buradan değiştiremezsiniz.");
+  if (typeof req.body?.disabled !== "boolean")
+    throw fail(400, "Erişim durumu geçersiz.");
+  const reason = String(req.body.reason || "").trim().slice(0, 500) || null;
+  const [result] = await pool.execute(
+    "UPDATE users SET access_disabled=?,access_disabled_reason=?,access_disabled_at=IF(?,UTC_TIMESTAMP(3),NULL) WHERE id=?",
+    [req.body.disabled, req.body.disabled ? reason : null, req.body.disabled, req.params.id],
+  );
+  if (!result.affectedRows) throw fail(404, "Kullanıcı bulunamadı.");
+  if (req.body.disabled)
+    await pool.execute("DELETE FROM sessions WHERE user_id=?", [req.params.id]);
+  res.json({ data: { id: req.params.id, access_disabled: req.body.disabled } });
+});
 const columns = {
   notifications: ["id", "user_id", "type", "content", "is_read", "created_at"],
   links: [
