@@ -1,31 +1,17 @@
-# Dockerfile for production
-FROM node:20-alpine AS builder
-
+FROM node:22-alpine AS builder
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install dependencies
 RUN npm ci --legacy-peer-deps
-
-# Copy source code
 COPY . .
-
-# Build the application
 RUN npm run build
-
-# Production stage
-FROM nginx:alpine
-
-# Copy built files to nginx
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port
+FROM node:22-alpine
+ENV NODE_ENV=production PORT=80 UPLOAD_DIR=/app/data/uploads
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev --legacy-peer-deps && mkdir -p /app/data/uploads && chown -R node:node /app
+COPY --from=builder /app/dist ./dist
+COPY server ./server
+USER node
 EXPOSE 80
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s CMD node -e "fetch('http://127.0.0.1:80/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "server/index.js"]

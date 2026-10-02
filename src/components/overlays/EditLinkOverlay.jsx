@@ -9,10 +9,10 @@ import {
 import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
-import { createClient } from '../../utils/supabase/client';
+import { createClient } from '../../utils/api/client';
 import { useAuth } from '../../context/AuthContext';
 
-const supabase = createClient();
+const api = createClient();
 
 const EditLinkOverlay = ({ link, onClose }) => {
     const { user } = useAuth();
@@ -51,14 +51,14 @@ const EditLinkOverlay = ({ link, onClose }) => {
             let error;
             if (link?.id) {
                 // Update
-                const { error: updateError } = await supabase
+                const { error: updateError } = await api
                     .from('links')
                     .update(payload)
                     .eq('id', link.id);
                 error = updateError;
             } else {
                 // Insert
-                const { error: insertError } = await supabase
+                const { error: insertError } = await api
                     .from('links')
                     .insert([payload]);
                 error = insertError;

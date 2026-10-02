@@ -24,11 +24,11 @@ import BoostOverlay from '../components/overlays/BoostOverlay';
 import StatsOverlay from '../components/overlays/StatsOverlay';
 import EditLinkOverlay from '../components/overlays/EditLinkOverlay';
 import { useNavigate } from 'react-router-dom';
-import { createClient } from '../utils/supabase/client';
+import { createClient } from '../utils/api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
-const supabase = createClient();
+const api = createClient();
 
 const ShortLinkManager = () => {
     const { t } = useTranslation();
@@ -37,7 +37,7 @@ const ShortLinkManager = () => {
     const [activeOverlay, setActiveOverlay] = React.useState({ type: null, link: null });
     const [links, setLinks] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState(null);
+    const [, setError] = React.useState(null);
     const [filterStatus, setFilterStatus] = React.useState('all'); // all, active, archived
     const [showFilterMenu, setShowFilterMenu] = React.useState(false);
     const [toast, setToast] = React.useState(null);
@@ -45,9 +45,10 @@ const ShortLinkManager = () => {
 
     const fetchLinks = React.useCallback(async () => {
         setLoading(true);
+        setError(null);
         try {
             if (!user) return;
-            const { data, error } = await supabase
+            const { data, error } = await api
                 .from('links')
                 .select('*')
                 .eq('user_id', user.id)
@@ -57,6 +58,7 @@ const ShortLinkManager = () => {
             setLinks(data || []);
         } catch (err) {
             setError(err.message);
+            setToast({ message: err.message, type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -68,7 +70,7 @@ const ShortLinkManager = () => {
 
     const deleteLink = async (id) => {
         try {
-            const { error } = await supabase
+            const { error } = await api
                 .from('links')
                 .delete()
                 .eq('id', id);
@@ -85,7 +87,7 @@ const ShortLinkManager = () => {
 
     const toggleArchive = async (id, isArchived) => {
         try {
-            const { error } = await supabase
+            const { error } = await api
                 .from('links')
                 .update({ is_archived: !isArchived })
                 .eq('id', id);

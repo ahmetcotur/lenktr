@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { createClient } from '../utils/supabase/client';
+import { createClient } from '../utils/api/client';
 
-const supabase = createClient();
+const api = createClient();
 const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }) => {
@@ -12,14 +12,15 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         // Check active sessions and sets the user
         const setData = async () => {
-            const { data: { session }, error } = await supabase.auth.getSession();
+            const { data, error } = await api.auth.getSession();
+            const session = data?.session || null;
             if (error) console.error('Error getting session:', error);
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
         };
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = api.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     const value = {
         session,
         user,
-        signOut: () => supabase.auth.signOut(),
+        signOut: () => api.auth.signOut(),
     };
 
     return (

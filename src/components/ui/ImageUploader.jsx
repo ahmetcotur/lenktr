@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
-import { uploadImage, dataURLtoFile } from '../../utils/supabase/storage';
+import { uploadImage } from '../../utils/api/storage';
 import { useAuth } from '../../context/AuthContext';
 
 const ImageUploader = ({ label, value, onChange, presets = [], bucket = 'bio-images' }) => {

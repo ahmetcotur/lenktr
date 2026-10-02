@@ -1,26 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Search, Globe, Command } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+import { createClient } from '../../utils/api/client';
+const api = createClient();
 
 const Topbar = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [showNotifications, setShowNotifications] = useState(false);
-    const [notificationsList, setNotificationsList] = useState([
-        { id: 1, text: "New click from United States", time: "2m ago", read: false },
-        { id: 2, text: "System optimized successfully", time: "1h ago", read: false },
-        { id: 3, text: "New feature: Dark Mode", time: "1d ago", read: true },
-    ]);
+    const [notificationsList, setNotificationsList] = useState([]);
+    useEffect(() => {
+        if (!user) return;
+        api.from('notifications').select('*').order('created_at', { ascending: false }).limit(50).then(({ data }) => {
+            setNotificationsList((data || []).map(n => ({ ...n, text: n.content, read: n.is_read, time: new Date(n.created_at).toLocaleString() })));
+        });
+    }, [user]);
 
     const unreadCount = notificationsList.filter(n => !n.read).length;
 
-    const markAsRead = (id) => {
-        setNotificationsList(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    const markAsRead = async (id) => {
+        const { error } = await api.from('notifications').update({ is_read: true }).eq('id', id);
+        if (!error) setNotificationsList(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     };
-
-    const markAllRead = () => {
-        setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
+    const markAllRead = async () => {
+        await Promise.all(notificationsList.filter(n => !n.read).map(n => markAsRead(n.id)));
     };
 
     const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';

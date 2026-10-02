@@ -16,11 +16,11 @@ import {
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { useAuth } from '../context/AuthContext';
-import { createClient } from '../utils/supabase/client';
-import { uploadImage } from '../utils/supabase/storage';
+import { createClient } from '../utils/api/client';
+import { uploadImage } from '../utils/api/storage';
 import { useTranslation } from 'react-i18next';
 
-const supabase = createClient();
+const api = createClient();
 
 const SettingsPage = () => {
     const { t } = useTranslation();
@@ -40,7 +40,16 @@ const SettingsPage = () => {
         role: authUser?.user_metadata?.role || 'Operator'
     });
 
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const handlePasswordChange = async () => {
+        setLoading(true);
+        const { error } = await api.auth.updateUser({ current_password: currentPassword, password: newPassword });
+        setMessage({ type: error ? 'error' : 'success', text: error?.message || 'Şifreniz güncellendi.' });
+        if (!error) { setCurrentPassword(''); setNewPassword(''); }
+        setLoading(false);
+    };
     const [message, setMessage] = useState(null);
 
     const handleAvatarUpload = async (e) => {
@@ -72,7 +81,7 @@ const SettingsPage = () => {
         setMessage(null);
 
         try {
-            const { error: authError } = await supabase.auth.updateUser({
+            const { error: authError } = await api.auth.updateUser({
                 data: {
                     full_name: profile.name,
                     avatar_url: profile.avatar
@@ -81,7 +90,7 @@ const SettingsPage = () => {
 
             if (authError) throw authError;
 
-            const { error: profileError } = await supabase
+            const { error: profileError } = await api
                 .from('profiles')
                 .update({
                     full_name: profile.name,
@@ -287,6 +296,7 @@ const SettingsPage = () => {
                         {/* SECURITY TAB */}
                         {activeTab === 'security' && (
                             <div className="space-y-8">
+                                {message && <p role="status" className={message.type === 'error' ? 'text-red-400' : 'text-blue-400'}>{message.text}</p>}
                                 <div>
                                     <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-6">{t('settings.security.title')}</h2>
 
@@ -295,15 +305,16 @@ const SettingsPage = () => {
                                             <div className="flex items-center justify-between mb-6">
                                                 <div>
                                                     <h4 className="text-white font-bold">{t('settings.security.password.title')}</h4>
-                                                    <p className="text-zinc-500 text-sm">{t('settings.security.password.lastChanged')}</p>
+                                                    <p className="text-zinc-500 text-sm">En az 8 karakter</p>
                                                 </div>
-                                                <Button variant="outline" size="sm">{t('settings.security.password.action')}</Button>
+                                                <Button variant="outline" size="sm" onClick={handlePasswordChange} disabled={loading || !currentPassword || newPassword.length < 8}>{t('settings.security.password.action')}</Button>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="relative">
                                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
-                                                    <input type="password" placeholder={t('settings.security.password.placeholder')} className="w-full bg-[#08090D] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-blue-500" />
+                                                    <input value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} autoComplete="current-password" type="password" placeholder="Mevcut şifre" className="w-full bg-[#08090D] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-blue-500" />
                                                 </div>
+                                                <input value={newPassword} onChange={e => setNewPassword(e.target.value)} autoComplete="new-password" type="password" placeholder="Yeni şifre" className="w-full bg-[#08090D] border border-white/10 rounded-xl py-3 px-4 text-white text-sm" />
                                             </div>
                                         </div>
 

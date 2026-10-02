@@ -5,6 +5,7 @@ import AppLayout from './components/layout/AppLayout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import PasswordSetupPage from './pages/PasswordSetupPage';
 import PricingPage from './pages/PricingPage';
 import DashboardOverview from './pages/DashboardOverview';
 import ShortLinkManager from './pages/ShortLinkManager';
@@ -32,6 +33,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/account/password" element={<PasswordSetupPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/upgrade" element={<UpgradePlan />} />

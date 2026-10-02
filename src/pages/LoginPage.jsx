@@ -5,10 +5,10 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
 import Badge from '../components/ui/Badge';
-import { createClient } from '../utils/supabase/client';
+import { createClient } from '../utils/api/client';
 import { useTranslation } from 'react-i18next';
 
-const supabase = createClient();
+const api = createClient();
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -23,7 +23,7 @@ const LoginPage = () => {
         setLoading(true);
         setError(null);
 
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error } = await api.auth.signInWithPassword({
             email,
             password,
         });
@@ -34,16 +34,6 @@ const LoginPage = () => {
         } else {
             navigate('/dashboard');
         }
-    };
-
-    const handleGithubLogin = async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'github',
-            options: {
-                redirectTo: `${window.location.origin}/dashboard`
-            }
-        });
-        if (error) setError(error.message);
     };
 
     const toggleLanguage = () => {
@@ -115,7 +105,6 @@ const LoginPage = () => {
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{t('login.passwordLabel')}</label>
-                                    <a href="#" className="text-[10px] text-blue-500 hover:text-blue-400 font-black uppercase tracking-widest">{t('login.forgotPassword')}</a>
                                 </div>
                                 <div className="relative group">
                                     <input

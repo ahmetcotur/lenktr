@@ -73,13 +73,6 @@ const LandingPage = () => {
         },
     ];
 
-    const stats = [
-        { label: t('stats.s1l'), val: t('stats.s1v') },
-        { label: t('stats.s2l'), val: t('stats.s2v') },
-        { label: t('stats.s3l'), val: t('stats.s3v') },
-        { label: t('stats.s4l'), val: t('stats.s4v') },
-    ];
-
     const demos = [
         {
             id: 'glass',

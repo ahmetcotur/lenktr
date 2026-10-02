@@ -5,10 +5,10 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
 import Badge from '../components/ui/Badge';
-import { createClient } from '../utils/supabase/client';
+import { createClient } from '../utils/api/client';
 import { useTranslation } from 'react-i18next';
 
-const supabase = createClient();
+const api = createClient();
 
 const RegisterPage = () => {
     const navigate = useNavigate();
@@ -25,7 +25,7 @@ const RegisterPage = () => {
         setLoading(true);
         setError(null);
 
-        const { error } = await supabase.auth.signUp({
+        const { error } = await api.auth.signUp({
             email,
             password,
             options: {
@@ -41,8 +41,8 @@ const RegisterPage = () => {
             setError(error.message);
             setLoading(false);
         } else {
-            // Usually Supabase sends a confirmation email. 
-            // If email confirmation is off, it logs the user in.
+            // Registration opens a local session.
+
             navigate('/dashboard');
         }
     };

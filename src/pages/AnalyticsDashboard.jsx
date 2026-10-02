@@ -21,11 +21,11 @@ import {
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import { createClient } from '../utils/supabase/client';
+import { createClient } from '../utils/api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
-const supabase = createClient();
+const api = createClient();
 
 const AnalyticsDashboard = () => {
     const { t } = useTranslation();
@@ -54,9 +54,9 @@ const AnalyticsDashboard = () => {
                 console.log('Fetching analytics for user:', user.id);
                 // 1. Fetch headline data
                 const [linksRes, bioRes, logsRes] = await Promise.all([
-                    supabase.from('links').select('*').eq('user_id', user.id),
-                    supabase.from('bio_pages').select('*').eq('user_id', user.id),
-                    supabase.from('traffic_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: true }).limit(1000)
+                    api.from('links').select('*').eq('user_id', user.id),
+                    api.from('bio_pages').select('*').eq('user_id', user.id),
+                    api.from('traffic_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: true }).limit(1000)
                 ]);
 
                 console.log('Analytics responses:', {
@@ -147,7 +147,7 @@ const AnalyticsDashboard = () => {
         };
 
         fetchAnalytics();
-    }, [user?.id, t]); // Added t to dependencies
+    }, [user, t]); // Added t to dependencies
 
     // Graph constants
     const dataPoints = stats.chartData;

@@ -25,10 +25,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { createClient } from '../utils/supabase/client';
+import { createClient } from '../utils/api/client';
 import { useAuth } from '../context/AuthContext';
 
-const supabase = createClient();
+const api = createClient();
 
 // Sortable Link Item Component
 const SortableLinkItem = ({ link, updateLink, toggleLinkVisibility, deleteLink, setIconPickerOpen }) => {
@@ -217,7 +217,7 @@ const BioLinkEditor = () => {
     ]);
 
     const { user } = useAuth();
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [bioPageId, setBioPageId] = useState(null);
     const [toast, setToast] = useState(null);
@@ -241,7 +241,7 @@ const BioLinkEditor = () => {
 
             setLoading(true);
             try {
-                const { data, error } = await supabase
+                const { data, error } = await api
                     .from('bio_pages')
                     .select('*')
                     .eq('id', pageId)
@@ -315,7 +315,7 @@ const BioLinkEditor = () => {
             };
 
             if (bioPageId) {
-                const { error: updateError } = await supabase
+                const { error: updateError } = await api
                     .from('bio_pages')
                     .update(payload)
                     .eq('id', bioPageId);
@@ -323,7 +323,7 @@ const BioLinkEditor = () => {
                 if (updateError) throw updateError;
                 setToast({ message: t('bioEditor.toast.updated'), type: 'success' });
             } else {
-                const { data: newData, error: insertError } = await supabase
+                const { data: newData, error: insertError } = await api
                     .from('bio_pages')
                     .insert([payload])
                     .select()
@@ -470,7 +470,7 @@ const BioLinkEditor = () => {
         if (!file) return;
 
         try {
-            const { uploadImage } = await import('../utils/supabase/storage');
+            const { uploadImage } = await import('../utils/api/storage');
             const { url, error } = await uploadImage(file, 'avatars', user.id);
 
             if (error) {
@@ -486,12 +486,6 @@ const BioLinkEditor = () => {
     };
 
 
-
-    const updateSocialMedia = (id, url) => {
-        setSocialMedia(socialMedia.map(social =>
-            social.id === id ? { ...social, url, active: url.length > 0 } : social
-        ));
-    };
 
     const toggleSocialMedia = (platform) => {
         setSocialMedia(socialMedia.map(social =>

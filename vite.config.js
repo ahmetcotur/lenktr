@@ -8,5 +8,5 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
+  server: { proxy: { '/api': 'http://127.0.0.1:3001', '/uploads': 'http://127.0.0.1:3001' } },
 })

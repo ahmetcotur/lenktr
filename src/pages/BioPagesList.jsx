@@ -17,11 +17,11 @@ import {
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { createClient } from '../utils/supabase/client';
+import { createClient } from '../utils/api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
-const supabase = createClient();
+const api = createClient();
 
 const BioPagesList = () => {
     const { t } = useTranslation();
@@ -44,7 +44,7 @@ const BioPagesList = () => {
         setError(null); // Clear previous errors
         try {
             console.log('Fetching bio pages for user:', user.id);
-            const { data, error } = await supabase
+            const { data, error } = await api
                 .from('bio_pages')
                 .select('*')
                 .eq('user_id', user.id)
@@ -52,7 +52,7 @@ const BioPagesList = () => {
 
             console.log('Bio pages response:', { data, error });
             if (error) {
-                console.error('Supabase error:', error);
+                console.error('API error:', error);
                 throw new Error(error.message || 'Failed to fetch bio pages');
             }
             setBioPages(data || []);
@@ -62,7 +62,7 @@ const BioPagesList = () => {
         } finally {
             setLoading(false);
         }
-    }, [user?.id]);
+    }, [user]);
 
     React.useEffect(() => {
         fetchBioPages();
@@ -70,7 +70,7 @@ const BioPagesList = () => {
 
     const deletePage = async (id) => {
         try {
-            const { error } = await supabase
+            const { error } = await api
                 .from('bio_pages')
                 .delete()
                 .eq('id', id);
@@ -85,7 +85,7 @@ const BioPagesList = () => {
 
     const togglePublish = async (id, isPublished) => {
         try {
-            const { error } = await supabase
+            const { error } = await api
                 .from('bio_pages')
                 .update({ is_published: !isPublished })
                 .eq('id', id);

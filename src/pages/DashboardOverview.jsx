@@ -14,10 +14,10 @@ import {
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import { createClient } from '../utils/supabase/client';
+import { createClient } from '../utils/api/client';
 import { useAuth } from '../context/AuthContext';
 
-const supabase = createClient();
+const api = createClient();
 
 const DashboardOverview = () => {
     const navigate = useNavigate();
@@ -41,24 +41,24 @@ const DashboardOverview = () => {
                 // Fetch all data for totals and recent items separately
                 const [allLinksRes, allBioRes, recentLinksRes, recentBioRes] = await Promise.all([
                     // Get all links for totals
-                    supabase
+                    api
                         .from('links')
                         .select('clicks, is_archived')
                         .eq('user_id', user.id),
                     // Get all bio pages for totals
-                    supabase
+                    api
                         .from('bio_pages')
                         .select('views, is_published')
                         .eq('user_id', user.id),
                     // Get recent links for display
-                    supabase
+                    api
                         .from('links')
                         .select('id, title, short_slug, clicks, is_archived')
                         .eq('user_id', user.id)
                         .order('created_at', { ascending: false })
                         .limit(5),
                     // Get recent bio pages for display
-                    supabase
+                    api
                         .from('bio_pages')
                         .select('id, profile_title, slug, views, is_published')
                         .eq('user_id', user.id)
@@ -97,7 +97,7 @@ const DashboardOverview = () => {
         };
 
         fetchDashboardData();
-    }, [user?.id]);
+    }, [user]);
 
     if (loading) {
         return (
