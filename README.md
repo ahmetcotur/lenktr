@@ -7,6 +7,10 @@
 ## Özellikler
 
 - Kısa bağlantılar oluşturma, düzenleme, arşivleme ve tıklama takibi
+- UTM kampanya parametreleri; Meta, Google ve TikTok piksel olayları
+- Ülke, işletim sistemi ve tarayıcıya göre yönlendirme; zamanlama ve parola koruması
+- Sosyal paylaşım önizlemeleri ve isteğe bağlı markalı yönlendirme ekranı
+- Linklere özel ayarlanabilir QR kodları; PNG, JPG ve PDF dışa aktarımı
 - Özelleştirilebilir, yayınlanabilir bio sayfaları
 - Tarih aralığı seçilebilen trafik grafikleri; link ve bio sayfasına göre detaylar
 - Sosyal medya, arama motoru, yapay zekâ, bot, yönlendirme ve doğrudan trafik sınıflandırması

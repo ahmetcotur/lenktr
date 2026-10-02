@@ -10,9 +10,7 @@ import {
     MousePointer2,
     Calendar,
     Share2,
-    Globe,
-    Lock,
-    Zap,
+    QrCode,
     ChevronRight
 } from 'lucide-react';
 import Card from '../components/ui/Card';
@@ -20,15 +18,24 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Toast from '../components/ui/Toast';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import BoostOverlay from '../components/overlays/BoostOverlay';
 import StatsOverlay from '../components/overlays/StatsOverlay';
 import EditLinkOverlay from '../components/overlays/EditLinkOverlay';
+import QRCodeOverlay from '../components/overlays/QRCodeOverlay';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createClient } from '../utils/api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
 const api = createClient();
+const statusFor = (link) => {
+    if (link.is_archived) return 'archived';
+    const now = Date.now();
+    const starts = Date.parse(link.settings?.schedule?.startsAt || '');
+    const expires = Date.parse(link.settings?.schedule?.expiresAt || '');
+    if (Number.isFinite(starts) && starts > now) return 'scheduled';
+    if (Number.isFinite(expires) && expires <= now) return 'expired';
+    return 'active';
+};
 
 const ShortLinkManager = () => {
     const { t } = useTranslation();
@@ -45,10 +52,12 @@ const ShortLinkManager = () => {
     const [showFilterMenu, setShowFilterMenu] = React.useState(false);
     const [toast, setToast] = React.useState(null);
     const [deleteConfirm, setDeleteConfirm] = React.useState(null);
+    const [loadError, setLoadError] = React.useState('');
 
     const fetchLinks = React.useCallback(async () => {
         setLoading(true);
         setError(null);
+        setLoadError('');
         try {
             if (!user) return;
             const { data, error } = await api
@@ -61,6 +70,7 @@ const ShortLinkManager = () => {
             setLinks(data || []);
         } catch (err) {
             setError(err.message);
+            setLoadError(err.message);
             setToast({ message: err.message, type: 'error' });
         } finally {
             setLoading(false);
@@ -111,17 +121,21 @@ const ShortLinkManager = () => {
         fetchLinks();
     };
 
-    if (activeOverlay.type === 'boost' && activeOverlay.link) {
-        return <BoostOverlay link={activeOverlay.link} onClose={closeOverlay} />;
-    }
-
     if (activeOverlay.type === 'stats' && activeOverlay.link) {
         return <StatsOverlay link={activeOverlay.link} onClose={closeOverlay} />;
+    }
+
+    if (activeOverlay.type === 'qr' && activeOverlay.link) {
+        return <QRCodeOverlay link={activeOverlay.link} onClose={closeOverlay} />;
     }
 
     if (activeOverlay.type === 'edit') {
         return <EditLinkOverlay link={activeOverlay.link} onClose={closeOverlay} />;
     }
+
+    const visibleLinks = links.filter(matches).filter((link) => filterStatus === 'all' || (filterStatus === 'active' ? statusFor(link) === 'active' : link.is_archived));
+    const activeLinks = links.filter((link) => statusFor(link) === 'active');
+    const totalClicks = links.reduce((total, link) => total + Number(link.clicks || 0), 0);
 
     return (
         <div className="space-y-10 animate-fade-in font-sans pb-20">
@@ -205,6 +219,10 @@ const ShortLinkManager = () => {
                 </div>
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-3">
+                {[{ label: t('linksPage.totalLinks'), value: links.length }, { label: t('linksPage.activeLinks'), value: activeLinks.length }, { label: t('linksPage.totalClicks'), value: totalClicks }].map((stat) => <Card key={stat.label} className="p-5"><div className="text-xs font-bold uppercase tracking-wide text-zinc-500">{stat.label}</div><div className="mt-2 text-3xl font-black text-white">{stat.value.toLocaleString()}</div></Card>)}
+            </div>
+
             {/* Quick Deploy Tool (Search & Create) */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div className="xl:col-span-2 relative group">
@@ -220,22 +238,24 @@ const ShortLinkManager = () => {
                     />
                 </div>
                 <div className="flex gap-4">
-                    <div
-                        onClick={() => {
-                            if (links.length === 0) {
-                                alert('No links to share. Create a link first!');
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            if (activeLinks.length === 0) {
+                                setToast({ message: t('linksPage.noLinksToShare'), type: 'error' });
                                 return;
                             }
-                            // Create a simple share text with all links
-                            const shareText = links.map(l => `${l.title || 'Link'}: https://lenk.tr/${l.short_slug}`).join('\n');
-                            navigator.clipboard.writeText(shareText);
-                            alert('All links copied to clipboard!');
+                            try {
+                                const shareText = activeLinks.map((item) => `${item.title || item.short_slug}: https://lenk.tr/${item.short_slug}`).join('\n');
+                                await navigator.clipboard.writeText(shareText);
+                                setToast({ message: t('linksPage.linksCopied', { count: activeLinks.length }), type: 'success' });
+                            } catch { setToast({ message: t('linksPage.copyFailed'), type: 'error' }); }
                         }}
-                        className="flex-1 px-4 py-4 rounded-2xl bg-zinc-900/20 border border-dashed border-white/10 flex items-center justify-center gap-3 text-zinc-600 cursor-pointer hover:border-blue-500/30 hover:text-blue-500 transition-all"
+                        className="flex-1 px-4 py-4 rounded-2xl bg-zinc-900/20 border border-dashed border-white/10 flex items-center justify-center gap-3 text-zinc-400 hover:border-blue-500/30 hover:text-blue-400 transition-all"
                     >
                         <Share2 size={18} />
                         <span className="text-sm font-bold uppercase tracking-widest">{t('linksPage.shareLinks')}</span>
-                    </div>
+                    </button>
                 </div>
             </div>
 
@@ -249,16 +269,12 @@ const ShortLinkManager = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
-                    {loading ? (
+                    {loadError ? <div role="alert" className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-sm text-red-300">{loadError}</div> : loading ? (
                         <div className="p-20 text-center space-y-4">
                             <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
                             <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">{t('linksPage.loading')}</p>
                         </div>
-                    ) : links.filter(matches).filter(link => {
-                        if (filterStatus === 'active') return !link.is_archived;
-                        if (filterStatus === 'archived') return link.is_archived;
-                        return true;
-                    }).length === 0 ? (
+                    ) : visibleLinks.length === 0 ? (
                         <div className="p-20 text-center border border-dashed border-white/5 rounded-3xl bg-zinc-900/10">
                             <div className="w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-6 text-zinc-700">
                                 <Link2 size={32} />
@@ -270,11 +286,7 @@ const ShortLinkManager = () => {
                             </Button>
                         </div>
                     ) : (
-                        links.filter(matches).filter(link => {
-                            if (filterStatus === 'active') return !link.is_archived;
-                            if (filterStatus === 'archived') return link.is_archived;
-                            return true;
-                        }).map((link, i) => (
+                        visibleLinks.map((link, i) => (
                             <div key={link.id || i} className="group relative bg-[#0D0F14]/40 border border-white/5 hover:border-blue-500/30 hover:bg-[#0D0F14]/60 rounded-2xl transition-all duration-300">
                                 <div className="p-5 md:p-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                                     {/* Details */}
@@ -286,7 +298,7 @@ const ShortLinkManager = () => {
                                             <div className="flex items-center gap-3">
                                                 <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate">{link.title || 'Untitled Link'}</h3>
                                                 <div className="flex md:hidden">
-                                                    <Badge variant={!link.is_archived ? 'success' : 'primary'} className="scale-75 origin-left">{!link.is_archived ? t('linksPage.statusActive') : t('linksPage.statusArchived')}</Badge>
+                                                    <Badge variant={statusFor(link) === 'active' ? 'success' : statusFor(link) === 'scheduled' ? 'warning' : 'primary'} className="scale-75 origin-left">{t(`linksPage.status${statusFor(link).replace(/^./, (letter) => letter.toUpperCase())}`)}</Badge>
                                                 </div>
                                             </div>
                                             <div className="flex flex-wrap items-center gap-3 text-xs">
@@ -298,13 +310,13 @@ const ShortLinkManager = () => {
                                     </div>
 
                                     {/* Stats */}
-                                    <div className="md:col-span-2 flex flex-col items-center cursor-pointer group/stats" onClick={() => openOverlay('stats', link)}>
+                                    <button type="button" className="md:col-span-2 flex flex-col items-center cursor-pointer group/stats" onClick={() => openOverlay('stats', link)}>
                                         <div className="flex items-center gap-2 text-white font-mono font-bold group-hover/stats:text-blue-400 transition-colors">
                                             <MousePointer2 size={14} className="text-lime-500" />
                                             {link.clicks || 0}
                                         </div>
                                         <span className="text-[9px] font-black text-zinc-700 uppercase tracking-tighter mt-1 group-hover/stats:text-blue-500/60 transition-colors">{t('linksPage.viewStats')}</span>
-                                    </div>
+                                    </button>
 
                                     {/* Date */}
                                     <div className="md:col-span-2 flex flex-col items-center">
@@ -317,7 +329,7 @@ const ShortLinkManager = () => {
                                     {/* Status & Actions */}
                                     <div className="md:col-span-2 flex items-center justify-end gap-4">
                                         <div className="hidden md:flex flex-col items-end gap-1">
-                                            <Badge variant={!link.is_archived ? 'success' : 'primary'}>{!link.is_archived ? t('linksPage.statusActive') : t('linksPage.statusArchived')}</Badge>
+                                            <Badge variant={statusFor(link) === 'active' ? 'success' : statusFor(link) === 'scheduled' ? 'warning' : 'primary'}>{t(`linksPage.status${statusFor(link).replace(/^./, (letter) => letter.toUpperCase())}`)}</Badge>
                                         </div>
                                         <div className="flex items-center gap-2 relative">
                                             <button
@@ -329,6 +341,9 @@ const ShortLinkManager = () => {
                                                 title="Copy Link"
                                             >
                                                 <Copy size={16} />
+                                            </button>
+                                            <button type="button" onClick={() => openOverlay('qr', link)} className="p-2.5 hover:bg-white/5 rounded-lg text-zinc-600 hover:text-white transition-all" title={t('qr.title')} aria-label={t('qr.title')}>
+                                                <QrCode size={16} />
                                             </button>
                                             <div className="relative group/menu">
                                                 <button className="p-2.5 hover:bg-white/5 rounded-lg text-zinc-600 hover:text-white transition-all">
@@ -373,19 +388,13 @@ const ShortLinkManager = () => {
                                 <div className="h-12 border-t border-white/5 bg-zinc-900/20 px-6 flex items-center justify-between rounded-b-2xl">
                                     <div className="flex gap-6">
                                         <a
-                                            href={link.original_url}
+                                            href={`https://lenk.tr/${link.short_slug}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-blue-500 flex items-center gap-2 transition-colors"
                                         >
                                             <ExternalLink size={12} /> {t('linksPage.visitLink')}
                                         </a>
-                                        <button
-                                            onClick={() => openOverlay('boost', link)}
-                                            className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white flex items-center gap-2 transition-colors"
-                                        >
-                                            <Zap size={12} /> {t('linksPage.boost')}
-                                        </button>
                                     </div>
                                     <button
                                         onClick={() => navigate('/analytics')}
@@ -400,17 +409,7 @@ const ShortLinkManager = () => {
                 </div>
             </div>
 
-            {/* Registry Footer */}
-            <div className="flex flex-col items-center gap-6 pt-10 border-t border-white/5">
-                <div className="flex items-center gap-4 text-xs font-bold text-zinc-600 uppercase tracking-widest">
-                    <span>Version 4.2.0</span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-800"></div>
-                    <span>4 Links Active</span>
-                </div>
-                <Button variant="outline" size="lg" className="w-full md:w-auto">
-                    Load More Links
-                </Button>
-            </div>
+            <p className="border-t border-white/5 pt-6 text-center text-xs text-zinc-600">{t('linksPage.showingLinks', { count: visibleLinks.length, total: links.length })}</p>
         </div>
     );
 };

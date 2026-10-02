@@ -84,6 +84,13 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
           short_slug: slug,
           original_url: "https://example.com",
           title: "QA",
+          settings: {
+            utm: { source: "qa", campaign: "links" },
+            pixels: { meta: "123456789012345" },
+            routingRules: [{ country: "TR", url: "https://tr.example/path" }],
+            socialPreview: { facebook: { title: "QA social title", description: "Preview from the link" } },
+            qr: { size: 512, foreground: "#111827", background: "#ffffff", moduleStyle: "dots", eyeStyle: "rounded" },
+          },
         },
       },
       cookieA,
@@ -91,6 +98,9 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
     assert.equal(made.status, 200);
     assert.equal(made.body.data.user_id, ids[0]);
     const link = made.body.data;
+    assert.equal(link.settings.utm.source, "qa");
+    assert.equal(link.settings.qr.moduleStyle, "dots");
+    assert.equal(link.has_password, false);
     assert.equal(
       (
         await api(
@@ -147,6 +157,10 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
       ).status,
       400,
     );
+    const resolved = await api("/api/resolve/" + slug, { referrer: "direct" });
+    assert.equal(resolved.body.data.redirect_url, "https://example.com/?utm_source=qa&utm_campaign=links");
+    const routed = await api("/api/resolve/" + slug, { referrer: "direct" }, "", { "CF-IPCountry": "TR", "User-Agent": "Mozilla/5.0" });
+    assert.equal(routed.body.data.redirect_url, "https://tr.example/path?utm_source=qa&utm_campaign=links");
     assert.equal(
       (
         await api(
@@ -172,7 +186,12 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
       headers: { "User-Agent": "GPTBot/1.0", "CF-IPCountry": "TR" },
     });
     assert.equal(botVisit.status, 302);
-    assert.equal(botVisit.headers.get("location"), "https://example.com");
+    assert.equal(botVisit.headers.get("location"), "https://tr.example/path?utm_source=qa&utm_campaign=links");
+    const socialPreview = await fetch(`${base}/${slug}`, {
+      headers: { "User-Agent": "facebookexternalhit/1.1", "CF-IPCountry": "US" },
+    });
+    assert.equal(socialPreview.status, 200);
+    assert.match(await socialPreview.text(), /QA social title/);
     const counted = await api(
       "/api/query",
       {
@@ -182,20 +201,48 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
       },
       cookieA,
     );
-    assert.equal(counted.body.data.clicks, 9);
+    assert.equal(counted.body.data.clicks, 12);
     const traffic = await api("/api/query", { table: "traffic_logs" }, cookieA);
-    assert.equal(traffic.body.data.length, 9);
+    assert.equal(traffic.body.data.length, 12);
     const analytics = await api("/api/analytics?range=7d", undefined, cookieA);
     assert.equal(analytics.status, 200);
-    assert.equal(analytics.body.data.totals.clicks, 9);
-    assert.equal(analytics.body.data.totals.events, 9);
+    assert.equal(analytics.body.data.totals.clicks, 12);
+    assert.equal(analytics.body.data.totals.events, 12);
     const analyticsLink = analytics.body.data.items.find((item) => item.slug === slug);
-    assert.equal(analyticsLink.val, 9);
+    assert.equal(analyticsLink.val, 12);
+    assert.equal(analyticsLink.series.reduce((sum, row) => sum + row.events, 0), 12);
     assert.equal(analyticsLink.sources.find((source) => source.name === "Instagram").traffic, 1);
     assert.equal(analyticsLink.sources.find((source) => source.name === "OpenAI crawler").traffic, 2);
     assert.equal(analyticsLink.sources.find((source) => source.name === "OpenAI crawler").type, "bot");
     assert.equal(analyticsLink.countries.find((country) => country.code === "TR").count, 2);
     assert.equal((await api("/api/analytics?range=7d", undefined, cookieB)).body.data.totals.events, 0);
+    const protectedSlug = "qa-lock-" + randomUUID();
+    const protectedLink = await api("/api/query", {
+      table: "links", operation: "insert", single: true,
+      values: { short_slug: protectedSlug, original_url: "https://protected.example", password: "SecretPass123!", settings: {} },
+    }, cookieB);
+    assert.equal(protectedLink.status, 200);
+    assert.equal(protectedLink.body.data.has_password, true);
+    assert.equal(protectedLink.body.data.password_hash, undefined);
+    const locked = await api("/api/resolve/" + protectedSlug, {});
+    assert.equal(locked.status, 401);
+    assert.equal(locked.body.password_required, true);
+    assert.equal((await api("/api/resolve/" + protectedSlug, { password: "wrong" })).status, 401);
+    assert.equal((await api("/api/resolve/" + protectedSlug, { password: "SecretPass123!" })).status, 200);
+    const protectedCount = await api("/api/query", { table: "links", single: true, filters: [{ column: "id", value: protectedLink.body.data.id }] }, cookieB);
+    assert.equal(protectedCount.body.data.clicks, 1);
+    for (const [label, schedule, expected] of [
+      ["future", { startsAt: new Date(Date.now() + 3600000).toISOString() }, 404],
+      ["expired", { expiresAt: new Date(Date.now() - 3600000).toISOString() }, 410],
+    ]) {
+      const scheduledSlug = `qa-${label}-${randomUUID()}`;
+      const created = await api("/api/query", {
+        table: "links", operation: "insert", single: true,
+        values: { short_slug: scheduledSlug, original_url: "https://schedule.example", settings: { schedule } },
+      }, cookieB);
+      assert.equal(created.status, 200);
+      assert.equal((await api("/api/resolve/" + scheduledSlug, {})).status, expected);
+    }
     const bioSlug = "qa-" + randomUUID();
     const bio = await api(
       "/api/query",

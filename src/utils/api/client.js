@@ -22,12 +22,13 @@ export async function request(url, body, method = "POST") {
                 : "İşlem tamamlanamadı.",
           },
         };
-    if (response.status === 401 && !url.includes("/api/auth/login"))
+    if (response.status === 401 && !url.includes("/api/auth/login") && !result.password_required)
       emit("SIGNED_OUT", null);
     if (!response.ok)
       return {
         data: null,
         error: result.error || { message: "İşlem tamamlanamadı." },
+        password_required: Boolean(result.password_required),
       };
     return { ...result, error: null };
   } catch {

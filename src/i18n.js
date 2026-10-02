@@ -432,6 +432,8 @@ i18n
                         views: 'Views',
                         createPage: 'Create Page'
                     },
+                    qr: { title: 'QR code', size: 'Image size', modules: 'Module style', corners: 'Finder corners', square: 'Square', rounded: 'Rounded', dots: 'Dots', circle: 'Circle', foreground: 'Foreground', background: 'Background', saveStyles: 'Save style', lowContrast: 'Choose colors with more contrast so phones can scan the QR code.', downloadError: 'QR download failed.' },
+                    redirect: { loading: 'Opening link…', title: 'Continue to destination', continue: 'Continue', passwordTitle: 'Password-protected link', passwordDescription: 'Enter the link password to continue.', checking: 'Checking…', openLink: 'Open link', failed: 'Link could not be opened', unavailable: 'This link is unavailable or no longer published.', home: 'Return to home' },
                     linksPage: {
                         title: 'My Links',
                         subtitle: 'Manage and track your shortened links in one place.',
@@ -459,6 +461,9 @@ i18n
                         viewStats: 'View Stats',
                         statusActive: 'Active',
                         statusArchived: 'Archived',
+                        statusScheduled: 'Scheduled', statusExpired: 'Expired',
+                        totalLinks: 'Total links', activeLinks: 'Active links', totalClicks: 'All-time clicks',
+                        noLinksToShare: 'Create a link before sharing.', linksCopied: '{{count}} active links copied.', copyFailed: 'Could not copy links. Check clipboard permissions.', showingLinks: 'Showing {{count}} of {{total}} links',
                         tableHeaders: {
                             shortLink: 'Short Link / Destination',
                             analytics: 'Analytics',
@@ -493,7 +498,7 @@ i18n
                         itemSources: 'Sources for this asset',
                         itemCountries: 'Countries for this asset',
                         sourceBreakdownHint: 'Recognized search, social, AI, crawler and referral traffic, plus direct visits.',
-                        itemStatus: { active: 'Active', archived: 'Archived', published: 'Published', draft: 'Draft' },
+                        itemStatus: { active: 'Active', archived: 'Archived', published: 'Published', draft: 'Draft', scheduled: 'Scheduled', expired: 'Expired' },
                         sourceTypes: { direct: 'Direct', social: 'Social', search: 'Search', ai: 'AI', bot: 'Bot', referral: 'Referral' },
                         kpis: {
                             totalViews: 'Total Views',
@@ -728,14 +733,22 @@ i18n
                         posBottomRight: 'Bottom right banner',
                         posTopHeader: 'Top Header',
                         posBottomLeft: 'Bottom Left pop',
-                        schedulingDate: 'Scheduling date (UTC)',
-                        expirationDate: 'Expiration date (UTC)',
+                        schedulingDate: 'Start time (your local timezone)',
+                        expirationDate: 'End time (your local timezone)',
                         passwordProtection: 'Password protection',
                         folder: 'Folder',
                         none: 'None',
                         selectFolder: 'Select Folder',
                         errorUrl: 'Please enter a destination URL',
-                        errorSave: 'Error saving link: '
+                        errorSave: 'Error saving link: ',
+                        utmHelp: 'These values are added to the destination URL when the short link is opened.',
+                        pixelHelp: 'PageView is sent from the short-link handoff page. A short pause lets the provider receive it.',
+                        routingHelp: 'The first matching country, device and browser rule chooses its destination.',
+                        addRule: 'Add rule', anyCountry: 'Any country', anyOs: 'Any OS', anyBrowser: 'Any browser', removeRule: 'Remove rule',
+                        previewHelp: 'Social crawlers receive these Open Graph and Twitter Card values. Empty fields use the default title.',
+                        previewTitle: 'Preview title', previewDescription: 'Preview description', previewImage: 'Preview image URL',
+                        passwordSet: 'Password is set; leave blank to keep it', passwordPlaceholder: 'At least 6 characters', removePassword: 'Remove password protection',
+                        enableTransit: 'Show a branded continue page before redirecting', transitTitle: 'Continue page title', transitMessage: 'Continue page message', transitButton: 'Button label'
                     },
                     boost: {
                         backToLinks: 'Back to Links',
@@ -779,7 +792,8 @@ i18n
                         trafficOverview: 'Traffic Overview',
                         day: 'Day',
                         topReferrers: 'Top Referrers',
-                        topLocations: 'Top Locations'
+                        topLocations: 'Top Locations',
+                        periodClicks: 'Clicks · {{period}}', destination: 'Destination'
                     }
                 }
             },
@@ -1204,6 +1218,8 @@ i18n
                         views: 'Görüntüleme',
                         createPage: 'Sayfa Oluştur'
                     },
+                    qr: { title: 'QR kodu', size: 'Görsel boyutu', modules: 'Modül stili', corners: 'Köşe stili', square: 'Kare', rounded: 'Yuvarlak köşeli', dots: 'Noktalar', circle: 'Daire', foreground: 'Ön plan', background: 'Arka plan', saveStyles: 'Stili kaydet', lowContrast: 'Telefonların QR kodunu okuyabilmesi için daha zıt renkler seçin.', downloadError: 'QR indirilemedi.' },
+                    redirect: { loading: 'Bağlantı açılıyor…', title: 'Hedef siteye geç', continue: 'Devam et', passwordTitle: 'Parola korumalı bağlantı', passwordDescription: 'Devam etmek için link parolasını girin.', checking: 'Kontrol ediliyor…', openLink: 'Bağlantıyı aç', failed: 'Bağlantı açılamadı', unavailable: 'Bu link kullanılamıyor veya artık yayında değil.', home: 'Ana sayfaya dön' },
                     linksPage: {
                         title: 'Linklerim',
                         subtitle: 'Kısaltılmış linklerinizi tek yerden yönetin ve takip edin.',
@@ -1231,6 +1247,9 @@ i18n
                         viewStats: 'İstatistikleri Gör',
                         statusActive: 'Aktif',
                         statusArchived: 'Arşivlenmiş',
+                        statusScheduled: 'Planlandı', statusExpired: 'Süresi doldu',
+                        totalLinks: 'Toplam link', activeLinks: 'Aktif link', totalClicks: 'Tüm zamanlar tıklama',
+                        noLinksToShare: 'Paylaşmadan önce link oluşturun.', linksCopied: '{{count}} aktif link kopyalandı.', copyFailed: 'Linkler kopyalanamadı. Pano izinlerini kontrol edin.', showingLinks: '{{total}} linkten {{count}} tanesi gösteriliyor',
                         tableHeaders: {
                             shortLink: 'Kısa Link / Hedef',
                             analytics: 'Analitik',
@@ -1265,7 +1284,7 @@ i18n
                         itemSources: 'Bu içeriğin kaynakları',
                         itemCountries: 'Bu içeriğin ülkeleri',
                         sourceBreakdownHint: 'Tanımlanan arama, sosyal medya, yapay zekâ, bot ve yönlendirme trafiği ile doğrudan ziyaretler.',
-                        itemStatus: { active: 'Aktif', archived: 'Arşivde', published: 'Yayında', draft: 'Taslak' },
+                        itemStatus: { active: 'Aktif', archived: 'Arşivde', published: 'Yayında', draft: 'Taslak', scheduled: 'Planlandı', expired: 'Süresi doldu' },
                         sourceTypes: { direct: 'Doğrudan', social: 'Sosyal medya', search: 'Arama', ai: 'Yapay zekâ', bot: 'Bot', referral: 'Yönlendirme' },
                         kpis: {
                             totalViews: 'Toplam Görüntüleme',
@@ -1500,14 +1519,22 @@ i18n
                         posBottomRight: 'Sağ alt başlık',
                         posTopHeader: 'Üst Başlık',
                         posBottomLeft: 'Sol alt pop',
-                        schedulingDate: 'Planlama tarihi (UTC)',
-                        expirationDate: 'Son kullanma tarihi (UTC)',
+                        schedulingDate: 'Başlangıç zamanı (yerel saat)',
+                        expirationDate: 'Bitiş zamanı (yerel saat)',
                         passwordProtection: 'Şifre koruması',
                         folder: 'Klasör',
                         none: 'Yok',
                         selectFolder: 'Klasör Seç',
                         errorUrl: 'Lütfen bir hedef URL girin',
-                        errorSave: 'Bağlantı kaydedilirken hata oluştu: '
+                        errorSave: 'Bağlantı kaydedilirken hata oluştu: ',
+                        utmHelp: 'Kısa link açıldığında bu değerler hedef URL’ye eklenir.',
+                        pixelHelp: 'PageView kısa link geçiş sayfasında gönderilir. Sağlayıcının olayı alması için kısa bir bekleme uygulanır.',
+                        routingHelp: 'İlk eşleşen ülke, cihaz ve tarayıcı kuralının hedefi kullanılır.',
+                        addRule: 'Kural ekle', anyCountry: 'Tüm ülkeler', anyOs: 'Tüm işletim sistemleri', anyBrowser: 'Tüm tarayıcılar', removeRule: 'Kuralı kaldır',
+                        previewHelp: 'Sosyal medya botları bu Open Graph ve Twitter Card verilerini görür. Boş alanlarda varsayılan başlık kullanılır.',
+                        previewTitle: 'Önizleme başlığı', previewDescription: 'Önizleme açıklaması', previewImage: 'Önizleme görseli URL’si',
+                        passwordSet: 'Parola kayıtlı; korumayı sürdürmek için boş bırakın', passwordPlaceholder: 'En az 6 karakter', removePassword: 'Parola korumasını kaldır',
+                        enableTransit: 'Yönlendirmeden önce markalı devam sayfası göster', transitTitle: 'Devam sayfası başlığı', transitMessage: 'Devam sayfası açıklaması', transitButton: 'Buton metni'
                     },
                     boost: {
                         backToLinks: 'Bağlantılara Dön',
@@ -1551,7 +1578,8 @@ i18n
                         trafficOverview: 'Trafik Özeti',
                         day: 'Gün',
                         topReferrers: 'En İyi Yönlendirenler',
-                        topLocations: 'En İyi Konumlar'
+                        topLocations: 'En İyi Konumlar',
+                        periodClicks: 'Tıklama · {{period}}', destination: 'Hedef URL'
                     }
                 }
             }

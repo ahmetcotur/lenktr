@@ -3,6 +3,7 @@ import accountRoutes from "./account.js";
 import { hash, fail, parse, auth, admin, isAdminEmail } from "./security.js";
 import { pool, transaction } from "./db.js";
 import { startMailWorker } from "./mail.js";
+import bcrypt from "bcryptjs";
 export { pool };
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
@@ -75,7 +76,7 @@ function classifySource(referrer, userAgent = "") {
     [/duckduckbot/, "DuckDuckBot"], [/yandexbot/, "YandexBot"], [/baiduspider/, "Baiduspider"],
     [/gptbot|oai-searchbot|openai-searchbot/, "OpenAI crawler"], [/claudebot|anthropic-ai/, "Anthropic crawler"],
     [/perplexitybot/, "Perplexity crawler"], [/applebot/, "Applebot"], [/bytespider/, "ByteDance crawler"],
-    [/facebookexternalhit|facebookcatalog/, "Meta preview bot"], [/twitterbot/, "X preview bot"],
+    [/facebookexternalhit|facebookcatalog/, "Meta preview bot"], [/twitterbot/, "X preview bot"], [/pinterestbot/, "Pinterest preview bot"],
     [/linkedinbot/, "LinkedIn preview bot"], [/discordbot/, "Discord preview bot"], [/slackbot/, "Slack preview bot"],
     [/telegrambot/, "Telegram preview bot"], [/whatsapp/, "WhatsApp preview bot"],
     [/bot|crawler|spider|crawl|scrapy|headlesschrome|preview/, "Other bot"],
@@ -117,10 +118,124 @@ function deviceFromAgent(agent) {
 function normalize(row) {
   const r = { ...row };
   if (r.theme_settings) r.theme_settings = parse(r.theme_settings);
+  if (r.settings) r.settings = parse(r.settings);
+  if ("password_hash" in r) r.has_password = Boolean(r.password_hash);
+  delete r.password_hash;
   for (const key of ["is_archived", "is_published", "is_read"])
     if (key in r) r[key] = Boolean(r[key]);
   if (r.created_at) r.created_at = r.created_at.replace(" ", "T") + "Z";
   return r;
+}
+const linkChannels = new Set(["default", "facebook", "twitter", "pinterest", "slack", "whatsapp", "telegram", "linkedin"]);
+function validateLinkSettings(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || JSON.stringify(value).length > 12000)
+    throw fail(400, "Link ayarları geçersiz.");
+  const settings = {};
+  if (value.utm && typeof value.utm === "object" && !Array.isArray(value.utm)) {
+    settings.utm = {};
+    for (const key of ["source", "medium", "campaign", "term", "content"]) {
+      const entry = String(value.utm[key] || "").trim().slice(0, 200);
+      if (entry) settings.utm[key] = entry;
+    }
+  }
+  if (value.pixels && typeof value.pixels === "object" && !Array.isArray(value.pixels)) {
+    const pixels = {};
+    for (const key of ["meta", "google", "tiktok"]) {
+      const id = String(value.pixels[key] || "").trim();
+      if (!id) continue;
+      if (id.length > 100 || !/^[a-zA-Z0-9_-]+$/.test(id)) throw fail(400, "Piksel kimliği geçersiz.");
+      if (key === "meta" && !/^\d{5,20}$/.test(id)) throw fail(400, "Meta Pixel kimliği yalnızca 5–20 rakam içermeli.");
+      if (key === "google" && !/^(G-[A-Z0-9]+|AW-\d+|GT-[A-Z0-9]+)$/i.test(id)) throw fail(400, "Google kimliği G-, AW- veya GT- biçiminde olmalı.");
+      pixels[key] = id;
+    }
+    settings.pixels = pixels;
+  }
+  if (Array.isArray(value.routingRules)) {
+    if (value.routingRules.length > 20) throw fail(400, "En fazla 20 yönlendirme kuralı ekleyebilirsiniz.");
+    settings.routingRules = value.routingRules.map((rule) => {
+      if (!rule || typeof rule !== "object") throw fail(400, "Yönlendirme kuralı geçersiz.");
+      const country = String(rule.country || "").toUpperCase();
+      const os = String(rule.os || "");
+      const browser = String(rule.browser || "");
+      const url = String(rule.url || "").trim();
+      if (country && !/^[A-Z]{2}$/.test(country)) throw fail(400, "Ülke kodu geçersiz.");
+      if (os && !["ios", "android", "windows", "macos"].includes(os)) throw fail(400, "İşletim sistemi geçersiz.");
+      if (browser && !["chrome", "safari", "firefox", "edge"].includes(browser)) throw fail(400, "Tarayıcı geçersiz.");
+      if (!url) throw fail(400, "Yönlendirme hedefi gerekli.");
+      urlCheck(url);
+      return { country, os, browser, url };
+    });
+  }
+  if (value.schedule && typeof value.schedule === "object") {
+    const schedule = {};
+    for (const key of ["startsAt", "expiresAt"]) {
+      const date = value.schedule[key] ? new Date(value.schedule[key]) : null;
+      if (date && !Number.isFinite(date.getTime())) throw fail(400, "Yayın tarihi geçersiz.");
+      if (date) schedule[key] = date.toISOString();
+    }
+    if (schedule.startsAt && schedule.expiresAt && schedule.startsAt >= schedule.expiresAt)
+      throw fail(400, "Bitiş tarihi başlangıçtan sonra olmalı.");
+    settings.schedule = schedule;
+  }
+  if (value.socialPreview && typeof value.socialPreview === "object" && !Array.isArray(value.socialPreview)) {
+    settings.socialPreview = {};
+    for (const [channel, preview] of Object.entries(value.socialPreview)) {
+      if (!linkChannels.has(channel) || !preview || typeof preview !== "object") continue;
+      const item = {};
+      for (const key of ["title", "description", "image"]) {
+        const field = String(preview[key] || "").trim().slice(0, key === "description" ? 500 : 300);
+        if (field) item[key] = field;
+      }
+      if (item.image) urlCheck(item.image);
+      settings.socialPreview[channel] = item;
+    }
+  }
+  if (value.interstitial && typeof value.interstitial === "object") {
+    settings.interstitial = {
+      enabled: Boolean(value.interstitial.enabled),
+      title: String(value.interstitial.title || "").trim().slice(0, 160),
+      message: String(value.interstitial.message || "").trim().slice(0, 500),
+      buttonText: String(value.interstitial.buttonText || "").trim().slice(0, 50),
+    };
+  }
+  if (value.qr && typeof value.qr === "object") {
+    const qr = value.qr;
+    const foreground = String(qr.foreground || "#111827");
+    const background = String(qr.background || "#ffffff");
+    if (!/^#[0-9a-f]{6}$/i.test(foreground) || !/^#[0-9a-f]{6}$/i.test(background)) throw fail(400, "QR renkleri geçersiz.");
+    settings.qr = {
+      size: [256, 512, 1024].includes(Number(qr.size)) ? Number(qr.size) : 512,
+      foreground, background,
+      moduleStyle: ["square", "rounded", "dots"].includes(qr.moduleStyle) ? qr.moduleStyle : "square",
+      eyeStyle: ["square", "rounded", "circle"].includes(qr.eyeStyle) ? qr.eyeStyle : "square",
+    };
+  }
+  return settings;
+}
+function linkAvailable(settings) {
+  const now = Date.now();
+  const starts = Date.parse(settings?.schedule?.startsAt || "");
+  const expires = Date.parse(settings?.schedule?.expiresAt || "");
+  if (Number.isFinite(starts) && starts > now) throw fail(404, "Bu kısa bağlantı henüz yayında değil.");
+  if (Number.isFinite(expires) && expires <= now) throw fail(410, "Bu kısa bağlantının yayın süresi doldu.");
+}
+function platformFromAgent(agent) {
+  const ua = String(agent || "");
+  const os = /iPhone|iPad|iPod/i.test(ua) ? "ios" : /Android/i.test(ua) ? "android" : /Windows/i.test(ua) ? "windows" : /Macintosh|Mac OS/i.test(ua) ? "macos" : "";
+  const browser = /Edg\//i.test(ua) ? "edge" : /Firefox\//i.test(ua) ? "firefox" : /Chrome\//i.test(ua) && !/Edg\//i.test(ua) ? "chrome" : /Safari\//i.test(ua) && !/Chrome\//i.test(ua) ? "safari" : "";
+  return { os, browser };
+}
+function redirectUrl(original, settings, req) {
+  const agent = req.get("user-agent") || "";
+  const country = String(req.get("cf-ipcountry") || "").toUpperCase();
+  const platform = platformFromAgent(agent);
+  const match = settings?.routingRules?.find((rule) =>
+    (!rule.country || rule.country === country) && (!rule.os || rule.os === platform.os) && (!rule.browser || rule.browser === platform.browser),
+  );
+  const target = new URL(match?.url || original);
+  for (const [key, value] of Object.entries(settings?.utm || {}))
+    target.searchParams.set(`utm_${key}`, value);
+  return target.toString();
 }
 export const app = express();
 app.set("trust proxy", 1);
@@ -206,7 +321,7 @@ app.get("/api/analytics", auth, async (req, res) => {
   const start = new Date(Date.now() - selected.amount * (selected.unit === "hour" ? 3600000 : 86400000))
     .toISOString().slice(0, 23).replace("T", " ");
   const userId = req.user.id;
-  const [totalsRows, seriesRows, sourceRows, deviceRows, countryRows, itemRows] = await Promise.all([
+  const [totalsRows, seriesRows, sourceRows, deviceRows, countryRows, itemRows, itemSeriesRows] = await Promise.all([
     pool.execute(
       "SELECT COUNT(*) AS events, COALESCE(SUM(type='link'),0) AS clicks, COALESCE(SUM(type='bio'),0) AS views FROM traffic_logs WHERE user_id=? AND created_at>=?",
       [userId, start],
@@ -228,8 +343,12 @@ app.get("/api/analytics", auth, async (req, res) => {
       [userId, start],
     ),
     pool.execute(
-      `SELECT 'link' AS type,l.id,COALESCE(l.title,l.short_slug) AS name,l.short_slug AS slug,l.original_url AS destination,COALESCE(t.events,0) AS events,l.is_archived,NULL AS is_published FROM links l LEFT JOIN (SELECT link_id,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? AND type='link' GROUP BY link_id) t ON t.link_id=l.id WHERE l.user_id=? UNION ALL SELECT 'bio' AS type,b.id,COALESCE(b.profile_title,b.slug) AS name,b.slug,NULL AS destination,COALESCE(t.events,0) AS events,NULL AS is_archived,b.is_published FROM bio_pages b LEFT JOIN (SELECT bio_page_id,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? AND type='bio' GROUP BY bio_page_id) t ON t.bio_page_id=b.id WHERE b.user_id=? ORDER BY events DESC,name`,
+      `SELECT 'link' AS type,l.id,COALESCE(l.title,l.short_slug) AS name,l.short_slug AS slug,l.original_url AS destination,COALESCE(t.events,0) AS events,l.is_archived,l.settings,NULL AS is_published FROM links l LEFT JOIN (SELECT link_id,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? AND type='link' GROUP BY link_id) t ON t.link_id=l.id WHERE l.user_id=? UNION ALL SELECT 'bio' AS type,b.id,COALESCE(b.profile_title,b.slug) AS name,b.slug,NULL AS destination,COALESCE(t.events,0) AS events,NULL AS is_archived,NULL AS settings,b.is_published FROM bio_pages b LEFT JOIN (SELECT bio_page_id,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? AND type='bio' GROUP BY bio_page_id) t ON t.bio_page_id=b.id WHERE b.user_id=? ORDER BY events DESC,name`,
       [userId, start, userId, userId, start, userId],
+    ),
+    pool.execute(
+      `SELECT link_id,DATE_FORMAT(created_at, ?) AS bucket,COUNT(*) AS events FROM traffic_logs WHERE user_id=? AND created_at>=? AND type='link' GROUP BY link_id,bucket`,
+      [selected.format, userId, start],
     ),
   ]);
   const totals = totalsRows[0][0];
@@ -253,6 +372,11 @@ app.get("/api/analytics", auth, async (req, res) => {
     }
   }
   const countriesByItem = new Map();
+  const seriesByItem = new Map();
+  for (const row of itemSeriesRows[0]) {
+    if (!seriesByItem.has(row.link_id)) seriesByItem.set(row.link_id, []);
+    seriesByItem.get(row.link_id).push({ bucket: row.bucket, events: Number(row.events) });
+  }
   const allCountries = new Map();
   for (const row of countryRows[0]) {
     const code = String(row.country || "").trim().toUpperCase();
@@ -284,11 +408,15 @@ app.get("/api/analytics", auth, async (req, res) => {
     items: itemRows[0].map((row) => {
       const itemKey = `${row.type}:${row.id}`;
       const count = Number(row.events);
+      const itemSettings = row.type === "link" ? parse(row.settings || "{}") : {};
+      const startsAt = Date.parse(itemSettings.schedule?.startsAt || "");
+      const expiresAt = Date.parse(itemSettings.schedule?.expiresAt || "");
       return {
         type: row.type, id: row.id, name: row.name, slug: row.slug, destination: row.destination, val: count,
-        status: row.type === "link" ? (row.is_archived ? "archived" : "active") : (row.is_published ? "published" : "draft"),
+        status: row.type === "link" ? (row.is_archived ? "archived" : Number.isFinite(startsAt) && startsAt > Date.now() ? "scheduled" : Number.isFinite(expiresAt) && expiresAt <= Date.now() ? "expired" : "active") : (row.is_published ? "published" : "draft"),
         sources: formatSources(itemSourceMaps.get(itemKey) || new Map(), count),
         countries: formatCountries(countriesByItem.get(itemKey) || new Map(), count),
+        series: row.type === "link" ? seriesByItem.get(row.id) || [] : [],
       };
     }),
   } });
@@ -491,6 +619,8 @@ const columns = {
     "original_url",
     "short_slug",
     "title",
+    "settings",
+    "password_hash",
     "clicks",
     "is_archived",
     "created_at",
@@ -522,7 +652,7 @@ const columns = {
 };
 const writable = {
   notifications: ["is_read"],
-  links: ["original_url", "short_slug", "title", "is_archived"],
+  links: ["original_url", "short_slug", "title", "is_archived", "settings"],
   bio_pages: [
     "slug",
     "profile_title",
@@ -597,6 +727,10 @@ app.post("/api/query", auth, async (req, res) => {
   const record = {};
   for (const key of writable[table])
     if (source[key] !== undefined) record[key] = source[key];
+  const password = source.password === undefined ? undefined : String(source.password);
+  const removePassword = source.remove_password === true;
+  if (table === "links" && password !== undefined && password.length > 0 && (password.length < 6 || password.length > 200))
+    throw fail(400, "Link parolası 6 ile 200 karakter arasında olmalı.");
   if (record.original_url !== undefined) urlCheck(record.original_url);
   const slugKey = table === "links" ? "short_slug" : "slug";
   if (record[slugKey] !== undefined) slugCheck(record[slugKey]);
@@ -618,6 +752,7 @@ app.post("/api/query", auth, async (req, res) => {
       throw fail(400, "Geçersiz tema.");
     record.theme_settings = JSON.stringify(record.theme_settings);
   }
+  if ("settings" in record) record.settings = JSON.stringify(validateLinkSettings(record.settings));
   const connection = await pool.getConnection();
   let id;
   try {
@@ -626,6 +761,7 @@ app.post("/api/query", auth, async (req, res) => {
       id = randomUUID();
       if (!record[slugKey] || (table === "links" && !record.original_url))
         throw fail(400, "Gerekli alanları doldurun.");
+      if (table === "links" && password) record.password_hash = await bcrypt.hash(password, 10);
       await connection.execute(
         "INSERT INTO slugs(slug,resource_id,kind) VALUES(?,?,?)",
         [record[slugKey], id, table === "links" ? "link" : "bio"],
@@ -652,6 +788,10 @@ app.post("/api/query", auth, async (req, res) => {
         );
         await connection.execute("DELETE FROM slugs WHERE resource_id=?", [id]);
       } else {
+        if (table === "links" && password !== undefined && password.length > 0)
+          await connection.execute("UPDATE links SET password_hash=? WHERE id=?", [await bcrypt.hash(password, 10), id]);
+        else if (table === "links" && removePassword)
+          await connection.execute("UPDATE links SET password_hash=NULL WHERE id=?", [id]);
         const keys = Object.keys(record);
         if (!keys.length) throw fail(400, "Güncellenecek alan yok.");
         if (record[slugKey])
@@ -696,6 +836,14 @@ app.post("/api/resolve/:slug", async (req, res) => {
     );
     const row = rows[0];
     if (!row) throw fail(404, "Adres bulunamadı.");
+    const settings = ref.kind === "link" ? parse(row.settings || "{}") : {};
+    if (ref.kind === "link") {
+      linkAvailable(settings);
+      if (row.password_hash && !(await bcrypt.compare(String(req.body.password || ""), row.password_hash))) {
+        await connection.rollback();
+        return res.status(401).json({ error: { message: "Bu bağlantı parola korumalı." }, password_required: true });
+      }
+    }
     const agent = req.get("user-agent") || "";
     const trackedByServer = req.cookies.lenk_bot_visit === req.params.slug && ["bot", "ai"].includes(classifySource("", agent).type);
     if (trackedByServer) res.clearCookie("lenk_bot_visit", { path: "/" });
@@ -719,6 +867,11 @@ app.post("/api/resolve/:slug", async (req, res) => {
     await connection.commit();
     const data = normalize(row);
     delete data.user_id;
+    if (ref.kind === "link") {
+      data.has_password = Boolean(row.password_hash);
+      res.json({ data: { type: ref.kind, page: data, redirect_url: redirectUrl(row.original_url, settings, req) } });
+      return;
+    }
     res.json({ data: { type: ref.kind, page: data } });
   } catch (e) {
     await connection.rollback();
@@ -782,6 +935,8 @@ app.use("/api", (req, res) =>
   res.status(404).json({ error: { message: "API bulunamadı." } }),
 );
 app.use(express.static(path.join(root, "dist")));
+const htmlEscape = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+const previewChannel = (visitor) => visitor.name.includes("Meta") ? "facebook" : visitor.name.includes("X preview") ? "twitter" : visitor.name.includes("Pinterest") ? "pinterest" : visitor.name.includes("LinkedIn") ? "linkedin" : visitor.name.includes("Slack") ? "slack" : visitor.name.includes("Telegram") ? "telegram" : visitor.name.includes("WhatsApp") ? "whatsapp" : "default";
 app.get("/:slug", async (req, res, next) => {
   const agent = req.get("user-agent") || "";
   const visitor = classifySource(req.get("referer"), agent);
@@ -801,6 +956,7 @@ app.get("/:slug", async (req, res, next) => {
     );
     const row = rows[0];
     if (!row) return null;
+    if (ref.kind === "link") linkAvailable(parse(row.settings || "{}"));
     await connection.execute(`UPDATE ${table} SET ${counter}=${counter}+1 WHERE id=?`, [row.id]);
     await connection.execute(
       "INSERT INTO traffic_logs(id,user_id,link_id,bio_page_id,type,referrer,country,device,browser) VALUES(?,?,?,?,?,?,?,?,?)",
@@ -813,10 +969,20 @@ app.get("/:slug", async (req, res, next) => {
         countryFromRequest(req), deviceFromAgent(agent), agent.slice(0, 200),
       ],
     );
-    return { kind: ref.kind, page: normalize(row) };
+      return { kind: ref.kind, page: normalize(row), isProtected: Boolean(row.password_hash) };
   });
   if (!hit) return next();
-  if (hit.kind === "link") return res.redirect(302, hit.page.original_url);
+  if (hit.kind === "link") {
+    if (hit.isProtected) return res.sendFile(path.join(root, "dist/index.html"), { dotfiles: "allow" });
+    const settings = parse(hit.page.settings || "{}");
+    const socialCrawler = /Meta preview|X preview|Pinterest preview|LinkedIn preview|Discord preview|Slack preview|Telegram preview|WhatsApp preview/.test(visitor.name);
+    if (!socialCrawler) return res.redirect(302, redirectUrl(hit.page.original_url, settings, req));
+    const preview = settings.socialPreview?.[previewChannel(visitor)] || settings.socialPreview?.default || {};
+    const title = htmlEscape(preview.title || hit.page.title || hit.page.short_slug);
+    const description = htmlEscape(preview.description || "Kısa bağlantı ile paylaşıldı.");
+    const image = preview.image ? `<meta property="og:image" content="${htmlEscape(preview.image)}"><meta name="twitter:image" content="${htmlEscape(preview.image)}">` : "";
+    return res.type("html").send(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${title}</title><meta name="description" content="${description}"><meta property="og:type" content="website"><meta property="og:title" content="${title}"><meta property="og:description" content="${description}"><meta property="og:url" content="https://lenk.tr/${htmlEscape(hit.page.short_slug)}"><meta name="twitter:card" content="${preview.image ? "summary_large_image" : "summary"}"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${description}">${image}</head><body><a href="${htmlEscape(hit.page.original_url)}">${title}</a></body></html>`);
+  }
   res.cookie("lenk_bot_visit", req.params.slug, {
     httpOnly: true, secure: true, sameSite: "lax", maxAge: 60000, path: "/",
   });
