@@ -82,8 +82,8 @@ const AnalyticsDashboard = () => {
 
                 // 2. Aggregate Top Items
                 const combinedItems = [
-                    ...links.map(l => ({ name: l.title || l.short_slug, val: l.clicks || 0, type: 'Link', slug: l.short_slug })),
-                    ...bioPages.map(p => ({ name: p.profile_title || p.slug, val: p.views || 0, type: 'Bio', slug: p.slug }))
+                    ...links.map(l => ({ name: l.title || l.short_slug, val: l.clicks || 0, type: 'link', slug: l.short_slug })),
+                    ...bioPages.map(p => ({ name: p.profile_title || p.slug, val: p.views || 0, type: 'bio', slug: p.slug }))
                 ].sort((a, b) => b.val - a.val).slice(0, 5);
 
                 // 3. Aggregate Sources
@@ -95,7 +95,7 @@ const AnalyticsDashboard = () => {
                 });
                 const topSources = Object.entries(sourcesMap)
                     .map(([name, count]) => ({
-                        name: name === 'direct' ? 'Direct / Search' : name,
+                        name: name === 'direct' ? t('analytics.directTraffic') : name,
                         traffic: count,
                         percent: Math.round((count / logs.length) * 100) || 0,
                         color: name.includes('instagram') ? 'pink' : name.includes('twitter') ? 'blue' : 'gray'
@@ -134,7 +134,7 @@ const AnalyticsDashboard = () => {
                     topItems: combinedItems,
                     topSources: topSources.length > 0 ? topSources : [
                         { name: 'Instagram', traffic: 0, percent: 0, color: 'pink' },
-                        { name: 'Direct', traffic: 0, percent: 0, color: 'gray' },
+                        { name: t('analytics.directTraffic'), traffic: 0, percent: 0, color: 'gray' },
                     ],
                     deviceStats,
                     chartData: chartData.every(v => v === 0) ? [10, 25, 40, 30, 50, 45, 60] : chartData
@@ -172,7 +172,7 @@ const AnalyticsDashboard = () => {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
                 <Loader2 className="animate-spin text-blue-500" size={40} />
-                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">{t('analytics.synchronizing')}</p>
+                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">{t('analytics.loading')}</p>
             </div>
         );
     }
@@ -183,10 +183,10 @@ const AnalyticsDashboard = () => {
             <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 pb-8 border-b border-white/5">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
-                        <Badge variant="primary" className="animate-pulse">{t('analytics.liveData')}</Badge>
+                        <Badge variant="primary" className="animate-pulse">{t('analytics.badge')}</Badge>
                         <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-lime-500 animate-ping"></div>
-                            {t('analytics.systemOperational')}
+                            {t('analytics.systemStatus')}
                         </span>
                     </div>
                     <h1 className="text-5xl font-extrabold tracking-tighter text-white font-heading">
@@ -199,7 +199,7 @@ const AnalyticsDashboard = () => {
                 <div className="flex gap-4">
                     <Button variant="secondary" size="lg" className="border border-white/5 bg-[#0D0F14]">
                         <Calendar size={18} className="mr-2 text-zinc-400" />
-                        <span className="text-zinc-300">{t('analytics.dateFilter')}</span>
+                        <span className="text-zinc-300">{t('analytics.last7Days')}</span>
                     </Button>
                     <Button variant="primary" size="lg" glow>
                         <Download size={18} className="mr-2" /> {t('analytics.exportReport')}
@@ -224,7 +224,7 @@ const AnalyticsDashboard = () => {
                                 <div className={`w-10 h-10 rounded-xl bg-${stat.color}-500/10 flex items-center justify-center text-${stat.color}-500`}>
                                     <stat.icon size={20} />
                                 </div>
-                                <span className={`text-${stat.color}-500/50 font-black text-[10px] uppercase tracking-widest`}>{t('analytics.realtime')}</span>
+                                <span className={`text-${stat.color}-500/50 font-black text-[10px] uppercase tracking-widest`}>{t('analytics.kpis.realtime')}</span>
                             </div>
                             <h3 className="text-4xl font-black text-white mb-1 group-hover:scale-105 transition-transform origin-left">{stat.val}</h3>
                             <div className="flex items-center gap-2">
@@ -243,10 +243,10 @@ const AnalyticsDashboard = () => {
                 <div className="p-8 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 z-20 bg-[#0D0F14]/80 backdrop-blur-sm">
                     <div>
                         <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                            {t('analytics.trafficVolume.title')}
+                            {t('analytics.trafficVolume')}
                             <span className="flex h-2 w-2 rounded-full bg-blue-500"></span>
                         </h3>
-                        <p className="text-sm text-zinc-500 font-mono mt-1">{t('analytics.trafficVolume.desc')}</p>
+                        <p className="text-sm text-zinc-500 font-mono mt-1">{t('analytics.aggregatedData')}</p>
                     </div>
                     <div className="flex gap-2">
                         {['12H', '24H', '7D', '30D'].map(range => (
@@ -304,9 +304,9 @@ const AnalyticsDashboard = () => {
                 <Card className="xl:col-span-2 p-8 min-h-[400px] flex flex-col bg-[#0D0F14]">
                     <div className="flex items-center justify-between mb-8">
                         <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                            <Globe size={20} className="text-blue-500" /> {t('analytics.globalHits.title')}
+                            <Globe size={20} className="text-blue-500" /> {t('analytics.globalHits')}
                         </h3>
-                        <Button variant="ghost" size="sm" className="text-zinc-500">{t('analytics.globalHits.viewMap')}</Button>
+                        <Button variant="ghost" size="sm" className="text-zinc-500">{t('analytics.viewMap')}</Button>
                     </div>
 
                     <div className="flex-1 relative rounded-2xl border border-white/5 bg-[#08090D] overflow-hidden flex items-center justify-center">
@@ -323,11 +323,11 @@ const AnalyticsDashboard = () => {
                                     <div className="w-3 h-3 bg-blue-500 rounded-full absolute inset-0 animate-ping"></div>
                                 </div>
                                 <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/20">
-                                    {pin.label} - {t('analytics.realtime')}
+                                    {pin.label} - {t('analytics.kpis.realtime')}
                                 </div>
                             </div>
                         ))}
-                        <div className="text-zinc-700 font-black text-6xl opacity-10 tracking-[1em] absolute select-none pointer-events-none">{t('analytics.globalHits.overlayTxt')}</div>
+                        <div className="text-zinc-700 font-black text-6xl opacity-10 tracking-[1em] absolute select-none pointer-events-none">{t('analytics.globalHitsLabel')}</div>
                     </div>
                 </Card>
 
@@ -345,14 +345,14 @@ const AnalyticsDashboard = () => {
                             <div key={i} className="px-8 py-5 border-b border-white/5 hover:bg-white/[0.02] transition-colors flex items-center justify-between group">
                                 <div className="space-y-1">
                                     <div className="text-sm font-bold text-white flex items-center gap-2">
-                                        <Badge variant={item.type === 'Link' ? 'primary' : 'success'} className="scale-75 origin-left">{item.type}</Badge>
+                                        <Badge variant={item.type === 'link' ? 'primary' : 'success'} className="scale-75 origin-left">{t(`analytics.topPerforming.${item.type}`)}</Badge>
                                         {item.name}
                                     </div>
                                     <div className="text-[10px] font-mono text-zinc-500">lenk.tr/{item.slug}</div>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-sm font-black text-white">{item.val.toLocaleString()}</div>
-                                    <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{item.type === 'Link' ? t('analytics.topPerforming.clicks') : t('analytics.topPerforming.views')}</div>
+                                    <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{item.type === 'link' ? t('analytics.topPerforming.clicks') : t('analytics.topPerforming.views')}</div>
                                 </div>
                             </div>
                         ))}
@@ -391,7 +391,7 @@ const AnalyticsDashboard = () => {
                 <Card className="xl:col-span-3 p-0 overflow-hidden flex flex-col bg-[#0D0F14]">
                     <div className="p-8 border-b border-white/5">
                         <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                            <Activity size={20} className="text-blue-500" /> {t('analytics.trafficSources.title')}
+                            <Activity size={20} className="text-blue-500" /> {t('analytics.trafficSources')}
                         </h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 divide-x divide-white/5 text-zinc-500">

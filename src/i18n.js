@@ -485,7 +485,15 @@ i18n
                         aggregatedData: 'Aggregated node data • 24h interval',
                         globalHits: 'Global Hits',
                         viewMap: 'View Map',
-                        topPerforming: 'Top Performing',
+                        globalHitsLabel: 'GLOBAL',
+                        directTraffic: 'Direct / Search',
+                        topPerforming: {
+                            title: 'Top Performing',
+                            clicks: 'Clicks',
+                            views: 'Views',
+                            link: 'Link',
+                            bio: 'Bio page'
+                        },
                         noData: 'No data yet',
                         fullAnalytics: 'Full Analytics',
                         trafficSources: 'Traffic Sources',
@@ -1212,7 +1220,15 @@ i18n
                         aggregatedData: 'Toplu düğüm verisi • 24s aralık',
                         globalHits: 'Küresel Erişimler',
                         viewMap: 'Haritayı Gör',
-                        topPerforming: 'En İyi Performans',
+                        globalHitsLabel: 'KÜRESEL',
+                        directTraffic: 'Doğrudan / Arama',
+                        topPerforming: {
+                            title: 'En İyi Performans',
+                            clicks: 'Tıklama',
+                            views: 'Görüntüleme',
+                            link: 'Bağlantı',
+                            bio: 'Bio sayfası'
+                        },
                         noData: 'Henüz veri yok',
                         fullAnalytics: 'Tam Analitik',
                         trafficSources: 'Trafik Kaynakları',
