@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from "../components/SEO";
 import { motion as Motion } from 'framer-motion';
 import { Check, ArrowRight, Sparkles, Star } from 'lucide-react';
 import Button from '../components/ui/Button';
@@ -56,6 +57,7 @@ const PricingPage = () => {
 
     return (
         <div className="min-h-screen bg-[#08090D] py-24 md:py-40 px-6 md:px-16 text-white font-sans">
+            <SEO title="LENK.TR fiyatlandırma" description="LENK.TR ile kısa bağlantılarını yönet, bio sayfanı oluştur ve tıklama istatistiklerini takip et." url="/pricing" />
             <div className="max-w-[1600px] mx-auto text-center mb-24 md:mb-40">
                 <Motion.div
                     initial={{ opacity: 0, y: 20 }}

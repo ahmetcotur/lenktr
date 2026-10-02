@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SEO from "../components/SEO";
 import { Link } from "react-router-dom";
 import { MailCheck, Loader2 } from "lucide-react";
 import { request } from "../utils/api/client";
@@ -19,6 +20,7 @@ export default function VerifyEmailPage() {
   }
   return (
     <main className="min-h-screen bg-[#08090D] text-white grid place-items-center p-6">
+      <SEO title="E-posta doğrulama | LENK.TR" description="LENK.TR hesabınızın e-posta adresini doğrulayın." url="/account/verify" noIndex />
       <section className="w-full max-w-md rounded-3xl bg-[#0D0F14] border border-white/10 p-8 space-y-6">
         <Link to="/" className="text-2xl font-black text-blue-500">
           lenk.tr

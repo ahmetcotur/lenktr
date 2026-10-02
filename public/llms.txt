@@ -1,0 +1,16 @@
+# LENK.TR
+
+> LENK.TR is a Turkish and English service for managing short links, publishing bio pages, and viewing click statistics.
+
+The public website is https://lenk.tr. Product pages and account interfaces are available in Turkish and English.
+
+## Public pages
+- [Home](https://lenk.tr/): Product overview, features, workflow, and bio page themes.
+- [Pricing](https://lenk.tr/pricing): Plans and pricing information.
+- [About](https://lenk.tr/about): About LENK.TR.
+- [Contact](https://lenk.tr/contact): Contact form.
+- [Security](https://lenk.tr/security): Security information.
+- [Terms](https://lenk.tr/terms): Terms of service.
+- [Privacy](https://lenk.tr/privacy): Privacy policy.
+
+Use the public pages as the source of truth. Do not infer unpublished account data, link destinations, or analytics.

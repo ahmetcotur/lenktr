@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from "../components/SEO";
 import { PublicNav, PublicFooter } from "../components/layout/PublicSite";
 import { useTranslation } from 'react-i18next';
 import { motion as Motion } from 'framer-motion';
@@ -19,6 +20,7 @@ const TermsPage = () => {
 
     return (
         <div className="min-h-screen bg-[#08090D] text-white">
+            <SEO title={`${t('terms.title')} | LENK.TR`} description={t('terms.intro')} url="/terms" />
             {/* Ambient Background */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[160px] rounded-full animate-pulse"></div>

@@ -207,9 +207,9 @@ const LandingPage = () => {
         <div className="min-h-screen bg-[#08090D] text-white selection:bg-blue-500/30 font-sans">
             {/* SEO Meta Tags */}
             <SEO
-                title="LENK.TR - Modern Link Management & Bio Pages"
-                description="Create beautiful bio pages and manage your links with LENK.TR. Modern, fast, and easy to use link management platform for creators and businesses."
-                keywords="link management, bio page, linktree alternative, social media links, bio link, link in bio, url shortener, link tracking, analytics"
+                title="LENK.TR — Kısa bağlantılar ve bio sayfaları"
+                description={t('hero.desc')}
+                keywords="kısa bağlantı, link yönetimi, bio sayfası, bağlantı istatistikleri, link in bio"
                 url="/"
             />
 

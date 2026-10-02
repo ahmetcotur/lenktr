@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from "../components/SEO";
 import { Link } from 'react-router-dom';
 import { PublicNav, PublicFooter } from "../components/layout/PublicSite";
 import { useTranslation } from 'react-i18next';
@@ -43,6 +44,7 @@ const AboutPage = () => {
 
     return (
         <div className="min-h-screen bg-[#08090D] text-white">
+            <SEO title={`${t('about.title')} | LENK.TR`} description={t('about.missionText')} url="/about" />
             {/* Ambient Background */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[160px] rounded-full animate-pulse"></div>

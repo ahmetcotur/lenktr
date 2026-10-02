@@ -1,55 +1,51 @@
-import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 
-const SEO = ({
-    title = 'LENK.TR - Modern Link Management & Bio Pages',
-    description = 'Create beautiful bio pages and manage your links with LENK.TR. Modern, fast, and easy to use link management platform.',
-    image = '/og-image.png',
-    url = '',
-    type = 'website',
-    keywords = 'link management, bio page, linktree alternative, social media links, bio link, link in bio',
-    author = 'LENK.TR',
-    twitterHandle = '@lenktr'
-}) => {
-    const siteUrl = 'https://lenk.tr';
-    const fullUrl = url ? `${siteUrl}${url}` : siteUrl;
-    const fullImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
+const SITE_URL = "https://lenk.tr";
 
-    return (
-        <Helmet>
-            {/* Primary Meta Tags */}
-            <title>{title}</title>
-            <meta name="title" content={title} />
-            <meta name="description" content={description} />
-            <meta name="keywords" content={keywords} />
-            <meta name="author" content={author} />
-            <link rel="canonical" href={fullUrl} />
+export default function SEO({
+  title = "LENK.TR | Bağlantı yönetimi ve bio sayfaları",
+  description = "Kısa bağlantılarını oluştur, bio sayfanı düzenle ve tıklama istatistiklerini tek yerden takip et.",
+  image = "/og-image.png",
+  url = "/",
+  type = "website",
+  keywords,
+  noIndex = false,
+  structuredData,
+}) {
+  const { i18n } = useTranslation();
+  const language = i18n.language?.startsWith("en") ? "en_US" : "tr_TR";
+  const canonical = new URL(url, SITE_URL).href;
+  const socialImage = new URL(image, SITE_URL).href;
+  const graph = structuredData
+    ? Array.isArray(structuredData)
+      ? structuredData
+      : [structuredData]
+    : null;
 
-            {/* Open Graph / Facebook */}
-            <meta property="og:type" content={type} />
-            <meta property="og:url" content={fullUrl} />
-            <meta property="og:title" content={title} />
-            <meta property="og:description" content={description} />
-            <meta property="og:image" content={fullImage} />
-            <meta property="og:site_name" content="LENK.TR" />
-            <meta property="og:locale" content="tr_TR" />
-
-            {/* Twitter */}
-            <meta property="twitter:card" content="summary_large_image" />
-            <meta property="twitter:url" content={fullUrl} />
-            <meta property="twitter:title" content={title} />
-            <meta property="twitter:description" content={description} />
-            <meta property="twitter:image" content={fullImage} />
-            <meta property="twitter:creator" content={twitterHandle} />
-
-            {/* Additional SEO */}
-            <meta name="robots" content="index, follow" />
-            <meta name="language" content="Turkish" />
-            <meta name="revisit-after" content="7 days" />
-            <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        </Helmet>
-    );
-};
-
-export default SEO;
+  return (
+    <Helmet>
+      <html lang={language === "tr_TR" ? "tr" : "en"} />
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      {keywords && <meta name="keywords" content={keywords} />}
+      <meta name="robots" content={noIndex ? "noindex, nofollow" : "index, follow, max-image-preview:large"} />
+      <link rel="canonical" href={canonical} />
+      <meta property="og:type" content={type} />
+      <meta property="og:url" content={canonical} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={socialImage} />
+      <meta property="og:image:alt" content="LENK.TR — bağlantı yönetimi ve bio sayfaları" />
+      <meta property="og:site_name" content="LENK.TR" />
+      <meta property="og:locale" content={language} />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={socialImage} />
+      {graph && (
+        <script type="application/ld+json">{JSON.stringify({ "@context": "https://schema.org", "@graph": graph })}</script>
+      )}
+    </Helmet>
+  );
+}

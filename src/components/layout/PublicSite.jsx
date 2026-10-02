@@ -36,8 +36,7 @@ export function PublicNav() {
     <header className="sticky top-0 z-50 border-b border-white/5 bg-[#08090D]/90 backdrop-blur-xl">
       <nav aria-label="Ana menü" className="mx-auto flex min-h-[76px] w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
         <Link to="/" aria-label="LENK.TR ana sayfa" className="flex shrink-0 items-center gap-3 text-white">
-          <span className="grid size-10 place-items-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/20"><Zap size={22} className="fill-current" /></span>
-          <span className="text-xl font-black tracking-tight sm:text-2xl">lenk.tr</span>
+          <img src="/logo-lenk.png" alt="LENK.TR" width="138" height="40" className="h-10 w-auto" />
         </Link>
         <div className="hidden items-center gap-1 lg:flex">{navLinks}</div>
         <div className="hidden items-center gap-3 sm:flex">
@@ -71,7 +70,7 @@ export function PublicFooter() {
       <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-10">
         <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:grid-cols-4 sm:gap-8">
           <div className="col-span-2 sm:col-span-1">
-            <Link to="/" className="inline-flex items-center gap-2 text-lg font-black text-white"><span className="grid size-9 place-items-center rounded-xl bg-blue-600"><Zap size={19} className="fill-current" /></span>lenk.tr</Link>
+            <Link to="/" aria-label="LENK.TR" className="inline-flex items-center"><img src="/logo-lenk.png" alt="LENK.TR" width="154" height="45" className="h-9 w-auto" /></Link>
             <p className="mt-3 max-w-xs text-sm leading-6 text-zinc-400">{tr ? "Bağlantılarını tek bir yerde düzenle, paylaş ve takip et." : "Manage, share, and track all your links in one place."}</p>
           </div>
           {columns.map((column) => <div key={column.title}><h2 className="text-xs font-bold uppercase tracking-widest text-white">{column.title}</h2><ul className="mt-3 space-y-2.5">{column.links.map(([label, to]) => <li key={to}><Link to={to} onClick={to.startsWith("/#") && pathname === "/" ? (event) => { const target = document.getElementById(to.slice(2)); if (target) { event.preventDefault(); history.replaceState(null, "", to); window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 88, behavior: "instant" }); } } : undefined} className="text-sm text-zinc-400 transition hover:text-white">{label}</Link></li>)}</ul></div>)}

@@ -6,7 +6,6 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Zap,
   Languages,
   X,
 } from "lucide-react";
@@ -42,12 +41,8 @@ export default function Sidebar({ onClose }) {
           onClick={onClose}
           className="flex items-center gap-3"
         >
-          <span className="w-10 h-10 rounded-xl bg-blue-600 grid place-items-center">
-            <Zap size={23} />
-          </span>
-          <span className="text-2xl font-black tracking-tight text-white">
-            lenk.tr
-          </span>
+          <img src="/logo-mark-512.png" alt="" width="40" height="40" className="size-10 rounded-xl" />
+          <span className="text-2xl font-black tracking-tight text-white">lenk.tr</span>
         </Link>
         {onClose && (
           <button

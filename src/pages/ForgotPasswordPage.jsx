@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SEO from "../components/SEO";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Mail, Loader2, CheckCircle2 } from "lucide-react";
 import { request } from "../utils/api/client";
@@ -18,6 +19,7 @@ export default function ForgotPasswordPage() {
   }
   return (
     <main className="min-h-screen bg-[#08090D] text-white grid place-items-center p-6">
+      <SEO title="Şifre sıfırlama | LENK.TR" description="LENK.TR hesabınız için yeni şifre bağlantısı isteyin." url="/forgot-password" noIndex />
       <section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0D0F14] p-8 sm:p-10">
         <Link to="/" className="text-2xl font-black text-blue-500">
           lenk.tr

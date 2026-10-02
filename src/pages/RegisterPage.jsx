@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import SEO from "../components/SEO";
 import { motion as Motion } from 'framer-motion';
-import { Zap, Check, Loader2, ArrowRight, Languages } from 'lucide-react';
+import { Check, Loader2, ArrowRight, Languages } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { Link, useNavigate } from 'react-router-dom';
@@ -54,6 +55,7 @@ const RegisterPage = () => {
 
     return (
         <div className="min-h-screen bg-[#08090D] flex flex-col items-center justify-center p-8 selection:bg-blue-500/30">
+      <SEO title={`${t('register.title')} | LENK.TR`} description="LENK.TR hesabınızı oluşturun ve bağlantılarınızı yönetin." url="/register" noIndex />
             {/* Language Switcher */}
             <div className="fixed top-8 right-8 z-50">
                 <button
@@ -79,14 +81,7 @@ const RegisterPage = () => {
                 className="relative z-10 w-full max-w-xl"
             >
                 <div className="flex justify-center mb-10">
-                    <Link to="/" className="flex items-center gap-4 group">
-                        <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
-                            <Zap size={28} className="text-white fill-current" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-black tracking-tighter font-heading text-white">lenk.tr</span>
-                        </div>
-                    </Link>
+                    <Link to="/" aria-label="LENK.TR ana sayfa" className="flex items-center"><img src="/logo-lenk.png" alt="LENK.TR" width="192" height="56" className="h-14 w-auto" /></Link>
                 </div>
 
                 <div className="bg-[#0D0F14] border border-white/5 rounded-[40px] p-12 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)]">
