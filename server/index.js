@@ -391,7 +391,7 @@ app.post("/api/resolve/:slug", async (req, res) => {
     const table = ref.kind === "link" ? "links" : "bio_pages",
       counter = ref.kind === "link" ? "clicks" : "views";
     const [rows] = await connection.execute(
-      `SELECT * FROM ${table} WHERE id=? AND ${ref.kind === "link" ? "is_archived=0" : "is_published=1"} FOR UPDATE`,
+      `SELECT resource.* FROM ${table} resource JOIN users owner ON owner.id=resource.user_id WHERE resource.id=? AND ${ref.kind === "link" ? "resource.is_archived=0" : "resource.is_published=1"} AND owner.access_disabled=0 FOR UPDATE`,
       [ref.resource_id],
     );
     const row = rows[0];
