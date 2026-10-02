@@ -179,6 +179,4 @@ h6 {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 
-html { scroll-behavior: smooth; scroll-padding-top: 1.5rem; }
-[id] { scroll-margin-top: 1.5rem; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+html { scroll-behavior: auto; scroll-padding-top: 88px; }

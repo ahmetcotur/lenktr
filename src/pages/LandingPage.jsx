@@ -36,7 +36,10 @@ const LandingPage = () => {
     const location = useLocation();
     useEffect(() => {
         if (!location.hash) return;
-        requestAnimationFrame(() => document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: 'start' }));
+        requestAnimationFrame(() => {
+            const target = document.getElementById(location.hash.slice(1));
+            if (target) window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 88, behavior: 'instant' });
+        });
     }, [location.hash]);
     const [emblaRef, emblaApi] = useEmblaCarousel(
         { loop: true, align: 'center', skipSnaps: false },
@@ -258,109 +261,38 @@ const LandingPage = () => {
             </section>
 
 
-            {/* Design Showcase: Infinite Styles */}
-            <section id="ecosystem" className="scroll-mt-6 relative z-10 px-6 md:px-16 py-10 md:py-12 max-w-[1400px] mx-auto overflow-hidden">
-                <div className="mb-8 md:mb-10 text-center">
-                    <Badge variant="primary" className="mb-4">{t('showcase.badge')}</Badge>
-                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">
-                        {t('showcase.title1')} <br /> {t('showcase.title2')}
-                    </h2>
-                    <p className="text-sm md:text-base text-gray-400 max-w-2xl mx-auto mt-4 leading-relaxed">
-                        {t('showcase.desc')}
-                    </p>
+            {/* Powerful Features */}
+            <section id="features" className="scroll-mt-24 relative z-10 px-6 md:px-16 py-10 md:py-12 max-w-[1400px] mx-auto">
+                <div className="mb-8 md:mb-10">
+                    <Badge variant="primary" className="mb-4">{t('features.badge')}</Badge>
+                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">{t('features.title')}</h2>
                 </div>
 
-                {/* Carousel Container */}
-                <div className="relative max-w-5xl mx-auto">
-                    <div className="overflow-hidden" ref={emblaRef}>
-                        <div className="flex gap-4 md:gap-6">
-                            {demos.map((d, i) => {
-                                const isCenter = i === selectedIndex;
-                                const distance = Math.abs(i - selectedIndex);
-                                const scale = isCenter ? 1 : distance === 1 ? 0.85 : 0.7;
-                                const opacity = isCenter ? 1 : distance === 1 ? 0.6 : 0.3;
-
-                                return (
-                                    <div
-                                        key={d.id}
-                                        className="flex-[0_0_70%] sm:flex-[0_0_45%] md:flex-[0_0_32%] lg:flex-[0_0_24%] min-w-0 transition-all duration-500"
-                                        style={{
-                                            transform: `scale(${scale})`,
-                                            opacity: opacity
-                                        }}
-                                    >
-                                        <div className="group cursor-pointer">
-                                            {/* Phone Frame */}
-                                            <div className="relative aspect-[9/18] rounded-[2rem] p-2 border-2 border-white/10 bg-[#0A0C10] shadow-2xl overflow-hidden group-hover:scale-[1.02] transition-all duration-500 max-w-[280px] mx-auto">
-                                                {/* Theme Overlay */}
-                                                <div className={`absolute inset-0 opacity-10 bg-gradient-to-br ${d.color}`}></div>
-
-                                                {/* Inner Screen */}
-                                                <div className={`relative h-full flex flex-col p-3 overflow-hidden ${d.theme.font}`}>
-                                                    <div className="flex flex-col items-center mb-4 mt-3">
-                                                        <div className={`w-12 h-12 rounded-full border-2 border-white/20 p-1 mb-2 group-hover:scale-110 transition-transform duration-500`}>
-                                                            <img src={d.preview.avatar} alt={d.preview.name} className="w-full h-full rounded-full object-cover" />
-                                                        </div>
-                                                        <h4 className="text-sm font-bold text-white mb-0.5">{d.preview.name}</h4>
-                                                        <p className="text-[8px] text-gray-400 text-center line-clamp-1 px-2">{d.preview.bio}</p>
-                                                    </div>
-
-                                                    <div className={`space-y-2 ${d.theme.layout === 'grid' ? 'grid grid-cols-2 gap-2 space-y-0' : ''}`}>
-                                                        {d.preview.links.map((link, idx) => (
-                                                            <a
-                                                                key={idx}
-                                                                href={typeof link === 'string' ? '#' : link.url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className={`w-full py-2 px-2 text-[9px] font-bold text-center flex items-center justify-center transition-all group/link relative ${d.theme.buttonStyle}`}
-                                                            >
-                                                                <span>{typeof link === 'string' ? link : link.label}</span>
-                                                                <ArrowRight size={8} className="absolute right-2 opacity-40 group-hover/link:opacity-100 transition-opacity" />
-                                                            </a>
-                                                        ))}
-                                                    </div>
-
-                                                    {/* Footer Accent */}
-                                                    <div className={`mt-auto w-full py-2 flex justify-center opacity-20`}>
-                                                        <Zap size={10} className="fill-current" />
-                                                    </div>
-                                                </div>
-
-                                                {/* Shine Effect */}
-                                                <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-white/0 via-white/5 to-white/0 -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-                                            </div>
-
-                                            <div className="mt-4 px-2 text-center">
-                                                <span className={`text-[8px] font-bold uppercase tracking-wider ${d.textColor} mb-1 block`}>{d.subtitle}</span>
-                                                <h3 className="text-base font-bold text-white mb-1">{d.title}</h3>
-                                                <p className="text-[11px] text-gray-500 leading-relaxed">{d.description}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Navigation Dots */}
-                    <div className="flex justify-center gap-2 mt-6">
-                        {demos.map((_, index) => (
-                            <button
-                                key={index}
-                                onClick={() => emblaApi?.scrollTo(index)}
-                                className={`h-1.5 rounded-full transition-all duration-300 ${index === selectedIndex
-                                    ? 'w-6 bg-blue-500'
-                                    : 'w-1.5 bg-white/20 hover:bg-white/40'
-                                    }`}
-                                aria-label={`Go to slide ${index + 1}`}
-                            />
-                        ))}
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                    {features.map((f, i) => (
+                        <Motion.div
+                            key={i}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            viewport={{ once: true }}
+                            className="premium-card p-5 md:p-6 group border-white/5"
+                        >
+                            <div className={`w-14 h-14 rounded-2xl ${f.bg} flex items-center justify-center ${f.color} mb-6 group-hover:scale-110 transition-transform duration-500 border border-white/5`}>
+                                <f.icon size={28} className="fill-current/10" />
+                            </div>
+                            <h3 className="text-xl md:text-2xl font-bold mb-3 tracking-tight text-white">{f.title}</h3>
+                            <p className="text-sm md:text-base text-gray-400 leading-relaxed">{f.desc}</p>
+                        </Motion.div>
+                    ))}
                 </div>
             </section>
 
+
+
+
             {/* How It Works */}
-            <section id="how-it-works" className="scroll-mt-6 relative z-10 px-6 md:px-16 py-10 md:py-12 max-w-[1400px] mx-auto">
+            <section id="how-it-works" className="scroll-mt-24 relative z-10 px-6 md:px-16 py-10 md:py-12 max-w-[1400px] mx-auto">
                 <div className="mb-8 md:mb-10 text-center">
                     <Badge variant="primary" className="mb-4">{t('howItWorks.badge')}</Badge>
                     <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">
@@ -616,33 +548,108 @@ const LandingPage = () => {
                 </Motion.div>
             </section>
 
-            {/* Powerful Features */}
-            <section id="features" className="scroll-mt-6 relative z-10 px-6 md:px-16 py-10 md:py-12 max-w-[1400px] mx-auto">
-                <div className="mb-8 md:mb-10">
-                    <Badge variant="primary" className="mb-4">{t('features.badge')}</Badge>
-                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">{t('features.title')}</h2>
+
+
+            {/* Design Showcase: Infinite Styles */}
+            <section id="ecosystem" className="scroll-mt-24 relative z-10 px-6 md:px-16 py-10 md:py-12 max-w-[1400px] mx-auto overflow-hidden">
+                <div className="mb-8 md:mb-10 text-center">
+                    <Badge variant="primary" className="mb-4">{t('showcase.badge')}</Badge>
+                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">
+                        {t('showcase.title1')} <br /> {t('showcase.title2')}
+                    </h2>
+                    <p className="text-sm md:text-base text-gray-400 max-w-2xl mx-auto mt-4 leading-relaxed">
+                        {t('showcase.desc')}
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                    {features.map((f, i) => (
-                        <Motion.div
-                            key={i}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                            viewport={{ once: true }}
-                            className="premium-card p-5 md:p-6 group border-white/5"
-                        >
-                            <div className={`w-14 h-14 rounded-2xl ${f.bg} flex items-center justify-center ${f.color} mb-6 group-hover:scale-110 transition-transform duration-500 border border-white/5`}>
-                                <f.icon size={28} className="fill-current/10" />
-                            </div>
-                            <h3 className="text-xl md:text-2xl font-bold mb-3 tracking-tight text-white">{f.title}</h3>
-                            <p className="text-sm md:text-base text-gray-400 leading-relaxed">{f.desc}</p>
-                        </Motion.div>
-                    ))}
+                {/* Carousel Container */}
+                <div className="relative max-w-5xl mx-auto">
+                    <div className="overflow-hidden" ref={emblaRef}>
+                        <div className="flex gap-4 md:gap-6">
+                            {demos.map((d, i) => {
+                                const isCenter = i === selectedIndex;
+                                const distance = Math.abs(i - selectedIndex);
+                                const scale = isCenter ? 1 : distance === 1 ? 0.85 : 0.7;
+                                const opacity = isCenter ? 1 : distance === 1 ? 0.6 : 0.3;
+
+                                return (
+                                    <div
+                                        key={d.id}
+                                        className="flex-[0_0_70%] sm:flex-[0_0_45%] md:flex-[0_0_32%] lg:flex-[0_0_24%] min-w-0 transition-all duration-500"
+                                        style={{
+                                            transform: `scale(${scale})`,
+                                            opacity: opacity
+                                        }}
+                                    >
+                                        <div className="group cursor-pointer">
+                                            {/* Phone Frame */}
+                                            <div className="relative aspect-[9/18] rounded-[2rem] p-2 border-2 border-white/10 bg-[#0A0C10] shadow-2xl overflow-hidden group-hover:scale-[1.02] transition-all duration-500 max-w-[280px] mx-auto">
+                                                {/* Theme Overlay */}
+                                                <div className={`absolute inset-0 opacity-10 bg-gradient-to-br ${d.color}`}></div>
+
+                                                {/* Inner Screen */}
+                                                <div className={`relative h-full flex flex-col p-3 overflow-hidden ${d.theme.font}`}>
+                                                    <div className="flex flex-col items-center mb-4 mt-3">
+                                                        <div className={`w-12 h-12 rounded-full border-2 border-white/20 p-1 mb-2 group-hover:scale-110 transition-transform duration-500`}>
+                                                            <img src={d.preview.avatar} alt={d.preview.name} className="w-full h-full rounded-full object-cover" />
+                                                        </div>
+                                                        <h4 className="text-sm font-bold text-white mb-0.5">{d.preview.name}</h4>
+                                                        <p className="text-[8px] text-gray-400 text-center line-clamp-1 px-2">{d.preview.bio}</p>
+                                                    </div>
+
+                                                    <div className={`space-y-2 ${d.theme.layout === 'grid' ? 'grid grid-cols-2 gap-2 space-y-0' : ''}`}>
+                                                        {d.preview.links.map((link, idx) => (
+                                                            <a
+                                                                key={idx}
+                                                                href={typeof link === 'string' ? '#' : link.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className={`w-full py-2 px-2 text-[9px] font-bold text-center flex items-center justify-center transition-all group/link relative ${d.theme.buttonStyle}`}
+                                                            >
+                                                                <span>{typeof link === 'string' ? link : link.label}</span>
+                                                                <ArrowRight size={8} className="absolute right-2 opacity-40 group-hover/link:opacity-100 transition-opacity" />
+                                                            </a>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Footer Accent */}
+                                                    <div className={`mt-auto w-full py-2 flex justify-center opacity-20`}>
+                                                        <Zap size={10} className="fill-current" />
+                                                    </div>
+                                                </div>
+
+                                                {/* Shine Effect */}
+                                                <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-white/0 via-white/5 to-white/0 -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+                                            </div>
+
+                                            <div className="mt-4 px-2 text-center">
+                                                <span className={`text-[8px] font-bold uppercase tracking-wider ${d.textColor} mb-1 block`}>{d.subtitle}</span>
+                                                <h3 className="text-base font-bold text-white mb-1">{d.title}</h3>
+                                                <p className="text-[11px] text-gray-500 leading-relaxed">{d.description}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Navigation Dots */}
+                    <div className="flex justify-center gap-2 mt-6">
+                        {demos.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => emblaApi?.scrollTo(index)}
+                                className={`h-1.5 rounded-full transition-all duration-300 ${index === selectedIndex
+                                    ? 'w-6 bg-blue-500'
+                                    : 'w-1.5 bg-white/20 hover:bg-white/40'
+                                    }`}
+                                aria-label={`Go to slide ${index + 1}`}
+                            />
+                        ))}
+                    </div>
                 </div>
             </section>
-
 
             <PublicFooter />
         </div>
