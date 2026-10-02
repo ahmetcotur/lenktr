@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
 // Country shapes derived from @svg-maps/world (CC BY 4.0); attribution is shown on the map.
 import world from '../../assets/world-map.json';
+import { countryName } from '../../utils/countryName';
 
 export default function CountryTrafficMap({ countries, locale, t }) {
     const [hovered, setHovered] = useState(null);
     const countryNames = useMemo(() => new Intl.DisplayNames([locale], { type: 'region' }), [locale]);
     const counts = useMemo(() => new Map(countries.map((country) => [country.code.toLowerCase(), country.count])), [countries]);
     const max = Math.max(...countries.map((country) => country.count), 0);
-    const label = (code) => countryNames.of(code.toUpperCase()) || code.toUpperCase();
+    const label = (code) => countryName(code, countryNames, t('analytics.unknownCountry'));
     const colorFor = (count) => {
         if (!count || !max) return '#171b24';
         const intensity = count / max;
