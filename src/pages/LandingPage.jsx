@@ -209,9 +209,9 @@ const LandingPage = () => {
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/5 blur-[160px] rounded-full"></div>
             </div>
 
-            <nav className="relative z-50 flex items-center justify-between px-8 md:px-16 py-10 max-w-[1600px] mx-auto">
+            <nav className="relative z-50 flex items-center justify-between px-4 sm:px-8 md:px-16 py-6 sm:py-10 max-w-[1600px] mx-auto">
                 <div className="flex items-center gap-10">
-                    <Link to="/" className="flex items-center gap-4 group cursor-pointer">
+                    <Link to="/" className="flex items-center gap-2 sm:gap-4 group cursor-pointer">
                         <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/30 group-hover:scale-110 transition-transform duration-500">
                             <Zap size={28} className="text-white fill-current" />
                         </div>
@@ -226,7 +226,7 @@ const LandingPage = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-8">
+                <div className="flex items-center gap-3 sm:gap-8">
                     <LanguageSwitcher />
                     <div className="h-4 w-px bg-white/5 hidden md:block" />
                     <Link to="/login" className="hidden md:block text-sm font-bold text-gray-400 hover:text-white tracking-widest uppercase transition-colors">{t('nav.signIn')}</Link>
