@@ -278,6 +278,7 @@ test("MariaDB auth, ownership, public counters, email verification, password rec
     const published = await api("/api/resolve/" + bioSlug, {});
     assert.equal(published.body.data.page.theme_settings.displayName, "QA");
     assert.equal(published.body.data.page.user_id, undefined);
+    assert.equal((await api("/api/resolve/" + bioSlug, null)).status, 200);
     assert.equal(
       (
         await api(

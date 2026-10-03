@@ -819,6 +819,7 @@ app.post("/api/query", auth, async (req, res) => {
   res.json({ data: single ? normalize(rows[0]) : rows.map(normalize) });
 });
 app.post("/api/resolve/:slug", async (req, res) => {
+  const body = req.body && typeof req.body === "object" ? req.body : {};
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -839,7 +840,7 @@ app.post("/api/resolve/:slug", async (req, res) => {
     const settings = ref.kind === "link" ? parse(row.settings || "{}") : {};
     if (ref.kind === "link") {
       linkAvailable(settings);
-      if (row.password_hash && !(await bcrypt.compare(String(req.body.password || ""), row.password_hash))) {
+      if (row.password_hash && !(await bcrypt.compare(String(body.password || ""), row.password_hash))) {
         await connection.rollback();
         return res.status(401).json({ error: { message: "Bu bağlantı parola korumalı." }, password_required: true });
       }
@@ -859,7 +860,7 @@ app.post("/api/resolve/:slug", async (req, res) => {
           ref.kind === "link" ? row.id : null,
           ref.kind === "bio" ? row.id : null,
           ref.kind,
-          String(req.body.referrer || "direct").slice(0, 2000),
+          String(body.referrer || "direct").slice(0, 2000),
           countryFromRequest(req), deviceFromAgent(agent), agent.slice(0, 200),
         ],
       );
