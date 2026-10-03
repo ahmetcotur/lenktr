@@ -28,6 +28,10 @@ export default function RedirectHandler() {
         } else window.location.replace(data.redirect_url || data.page.original_url);
         return;
       }
+      if (data?.type === "bio" && !error) {
+        setState({ slug, data, error: null });
+        return;
+      }
       setPasswordRequired(Boolean(required));
       setState({ slug, data: null, error });
     }).finally(() => setSubmitting(false));
