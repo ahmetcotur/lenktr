@@ -26,7 +26,8 @@ export default function Sidebar({ onClose }) {
     { icon: UserCircle, label: t("sidebar.menu.bioPage"), path: "/bio" },
     { icon: BarChart3, label: t("sidebar.menu.analytics"), path: "/analytics" },
     { icon: Settings, label: t("sidebar.menu.settings"), path: "/settings" },
-    ...(user?.app_metadata?.role === "admin"
+    ...(user?.app_metadata?.role === "admin" ||
+    String(user?.email || "").toLowerCase() === "ahmet@ahmetcotur.com"
       ? [{ icon: ShieldCheck, label: "Yönetim", path: "/admin" }]
       : []),
   ];

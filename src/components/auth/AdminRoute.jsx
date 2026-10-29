@@ -3,5 +3,8 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function AdminRoute({ children }) {
   const { user } = useAuth();
-  return user?.app_metadata?.role === "admin" ? children : <Navigate to="/dashboard" replace />;
+  const isAdmin =
+    user?.app_metadata?.role === "admin" ||
+    String(user?.email || "").toLowerCase() === "ahmet@ahmetcotur.com";
+  return isAdmin ? children : <Navigate to="/dashboard" replace />;
 }

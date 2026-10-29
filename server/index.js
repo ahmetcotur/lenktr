@@ -1,6 +1,6 @@
 import express from "express";
 import accountRoutes from "./account.js";
-import { hash, fail, parse, auth, admin, isAdminEmail } from "./security.js";
+import { hash, fail, parse, auth, admin, isAdminEmail, isUserAdmin } from "./security.js";
 import { pool, transaction } from "./db.js";
 import { startMailWorker } from "./mail.js";
 import bcrypt from "bcryptjs";
@@ -273,7 +273,7 @@ app.use("/api", async (req, res, next) => {
     const token = req.cookies.lenk_session;
     if (token) {
       const [rows] = await pool.execute(
-        "SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>UTC_TIMESTAMP()",
+        "SELECT u.*, p.role AS profile_role FROM sessions s JOIN users u ON u.id=s.user_id LEFT JOIN profiles p ON p.id=u.id WHERE s.token_hash=? AND s.expires_at>UTC_TIMESTAMP()",
         [hash(token)],
       );
       req.user = rows[0];
@@ -468,15 +468,15 @@ app.get("/api/admin/users/:id", admin, async (req, res) => {
     pool.execute("SELECT id,title,short_slug,original_url,clicks,is_archived,created_at FROM links WHERE user_id=? ORDER BY created_at DESC LIMIT 200", [req.params.id]),
     pool.execute("SELECT id,slug,profile_title,profile_bio,is_published,views,created_at FROM bio_pages WHERE user_id=? ORDER BY created_at DESC LIMIT 100", [req.params.id]),
   ]);
-  res.json({ data: { user: { ...users[0], is_admin: isAdminEmail(users[0].email) }, links, bio_pages: bioPages } });
+  res.json({ data: { user: { ...users[0], is_admin: isUserAdmin(users[0]) }, links, bio_pages: bioPages } });
 });
 app.patch("/api/admin/users/:id/access", admin, async (req, res) => {
   if (!/^[a-f0-9-]{36}$/i.test(req.params.id))
     throw fail(400, "Geçersiz kullanıcı kimliği.");
   if (req.params.id === req.user.id)
     throw fail(400, "Kendi hesabınızın erişimini buradan değiştiremezsiniz.");
-  const [target] = await pool.execute("SELECT email FROM users WHERE id=? LIMIT 1", [req.params.id]);
-  if (target[0] && isAdminEmail(target[0].email))
+  const [target] = await pool.execute("SELECT u.*, p.role AS profile_role FROM users u LEFT JOIN profiles p ON p.id=u.id WHERE u.id=? LIMIT 1", [req.params.id]);
+  if (target[0] && isUserAdmin(target[0]))
     throw fail(403, "Yönetici hesabının erişimi bu panelden değiştirilemez.");
   if (typeof req.body?.disabled !== "boolean")
     throw fail(400, "Erişim durumu geçersiz.");
@@ -575,15 +575,180 @@ app.delete("/api/admin/users/:id", admin, async (req, res) => {
   if (!/^[a-f0-9-]{36}$/i.test(id)) throw fail(400, "Geçersiz kullanıcı kimliği.");
   if (id === req.user.id) throw fail(400, "Kendi yönetici hesabınızı buradan silemezsiniz.");
   await transaction(async (connection) => {
-    const [rows] = await connection.execute("SELECT id,email FROM users WHERE id=? FOR UPDATE", [id]);
+    const [rows] = await connection.execute("SELECT u.id,u.email,u.metadata,p.role AS profile_role FROM users u LEFT JOIN profiles p ON p.id=u.id WHERE u.id=? FOR UPDATE", [id]);
     if (!rows[0]) throw fail(404, "Kullanıcı bulunamadı.");
-    if (isAdminEmail(rows[0].email)) throw fail(403, "Yönetici hesabı kullanıcı panelinden silinemez.");
+    if (isUserAdmin(rows[0])) throw fail(403, "Yönetici hesabı kullanıcı panelinden silinemez.");
     await connection.execute("DELETE s FROM slugs s JOIN links l ON l.id=s.resource_id WHERE l.user_id=?", [id]);
     await connection.execute("DELETE s FROM slugs s JOIN bio_pages b ON b.id=s.resource_id WHERE b.user_id=?", [id]);
     await connection.execute("DELETE FROM users WHERE id=?", [id]);
   });
   res.json({ data: { id, deleted: true } });
 });
+app.get("/api/admin/links", admin, async (req, res) => {
+  const page = Math.max(1, Math.min(100000, Number(req.query.page) || 1));
+  const pageSize = Math.max(1, Math.min(100, Number(req.query.pageSize) || 25));
+  const search = String(req.query.search || "").trim().slice(0, 120);
+  const status = String(req.query.status || "all").toLowerCase();
+  const userId = String(req.query.user_id || "").trim();
+
+  const conditions = [];
+  const params = [];
+
+  if (search) {
+    const term = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
+    conditions.push("(l.short_slug LIKE ? OR l.title LIKE ? OR l.original_url LIKE ? OR u.email LIKE ? OR p.full_name LIKE ?)");
+    params.push(term, term, term, term, term);
+  }
+  if (status === "active") {
+    conditions.push("l.is_archived = 0");
+  } else if (status === "archived") {
+    conditions.push("l.is_archived = 1");
+  }
+  if (userId && /^[a-f0-9-]{36}$/i.test(userId)) {
+    conditions.push("l.user_id = ?");
+    params.push(userId);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const [[counts], [links]] = await Promise.all([
+    pool.execute(
+      `SELECT COUNT(*) AS total FROM links l JOIN users u ON u.id=l.user_id LEFT JOIN profiles p ON p.id=u.id ${whereClause}`,
+      params,
+    ),
+    pool.execute(
+      `SELECT l.id, l.user_id, l.original_url, l.short_slug, l.title, l.clicks, l.is_archived, l.created_at, u.email AS user_email, p.full_name AS user_name FROM links l JOIN users u ON u.id=l.user_id LEFT JOIN profiles p ON p.id=u.id ${whereClause} ORDER BY l.created_at DESC LIMIT ? OFFSET ?`,
+      [...params, pageSize, (page - 1) * pageSize],
+    ),
+  ]);
+
+  res.json({
+    data: {
+      links: links.map((link) => ({
+        ...link,
+        clicks: Number(link.clicks),
+        is_archived: Boolean(link.is_archived),
+      })),
+      total: Number(counts[0].total),
+      page,
+      pageSize,
+    },
+  });
+});
+
+app.get("/api/admin/bio-pages", admin, async (req, res) => {
+  const page = Math.max(1, Math.min(100000, Number(req.query.page) || 1));
+  const pageSize = Math.max(1, Math.min(100, Number(req.query.pageSize) || 25));
+  const search = String(req.query.search || "").trim().slice(0, 120);
+  const status = String(req.query.status || "all").toLowerCase();
+  const userId = String(req.query.user_id || "").trim();
+
+  const conditions = [];
+  const params = [];
+
+  if (search) {
+    const term = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
+    conditions.push("(b.slug LIKE ? OR b.profile_title LIKE ? OR b.profile_bio LIKE ? OR u.email LIKE ? OR p.full_name LIKE ?)");
+    params.push(term, term, term, term, term);
+  }
+  if (status === "published") {
+    conditions.push("b.is_published = 1");
+  } else if (status === "draft") {
+    conditions.push("b.is_published = 0");
+  }
+  if (userId && /^[a-f0-9-]{36}$/i.test(userId)) {
+    conditions.push("b.user_id = ?");
+    params.push(userId);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const [[counts], [bioPages]] = await Promise.all([
+    pool.execute(
+      `SELECT COUNT(*) AS total FROM bio_pages b JOIN users u ON u.id=b.user_id LEFT JOIN profiles p ON p.id=u.id ${whereClause}`,
+      params,
+    ),
+    pool.execute(
+      `SELECT b.id, b.user_id, b.slug, b.profile_title, b.profile_bio, b.is_published, b.views, b.created_at, u.email AS user_email, p.full_name AS user_name FROM bio_pages b JOIN users u ON u.id=b.user_id LEFT JOIN profiles p ON p.id=u.id ${whereClause} ORDER BY b.created_at DESC LIMIT ? OFFSET ?`,
+      [...params, pageSize, (page - 1) * pageSize],
+    ),
+  ]);
+
+  res.json({
+    data: {
+      bio_pages: bioPages.map((bio) => ({
+        ...bio,
+        views: Number(bio.views),
+        is_published: Boolean(bio.is_published),
+      })),
+      total: Number(counts[0].total),
+      page,
+      pageSize,
+    },
+  });
+});
+
+app.patch("/api/admin/links/:linkId", admin, async (req, res) => {
+  const { linkId } = req.params;
+  if (!/^[a-f0-9-]{36}$/i.test(linkId)) throw fail(400, "Geçersiz kayıt kimliği.");
+  const values = req.body || {};
+  const title = String(values.title ?? "").trim().slice(0, 500);
+  const originalUrl = String(values.original_url ?? "").trim();
+  const slug = values.short_slug;
+  urlCheck(originalUrl);
+  if (typeof slug !== "string") throw fail(400, "Kısa adres gerekli.");
+  slugCheck(slug);
+  const archived = values.is_archived === true;
+  await transaction(async (connection) => {
+    const [rows] = await connection.execute("SELECT id FROM links WHERE id=? FOR UPDATE", [linkId]);
+    if (!rows[0]) throw fail(404, "Kısa bağlantı bulunamadı.");
+    await connection.execute("UPDATE slugs SET slug=? WHERE resource_id=?", [slug, linkId]);
+    await connection.execute("UPDATE links SET title=?,original_url=?,short_slug=?,is_archived=? WHERE id=?", [title || null, originalUrl, slug, archived, linkId]);
+  });
+  res.json({ data: { id: linkId } });
+});
+
+app.delete("/api/admin/links/:linkId", admin, async (req, res) => {
+  const { linkId } = req.params;
+  if (!/^[a-f0-9-]{36}$/i.test(linkId)) throw fail(400, "Geçersiz kayıt kimliği.");
+  await transaction(async (connection) => {
+    const [rows] = await connection.execute("SELECT id FROM links WHERE id=? FOR UPDATE", [linkId]);
+    if (!rows[0]) throw fail(404, "Kısa bağlantı bulunamadı.");
+    await connection.execute("DELETE FROM slugs WHERE resource_id=?", [linkId]);
+    await connection.execute("DELETE FROM links WHERE id=?", [linkId]);
+  });
+  res.json({ data: { id: linkId } });
+});
+
+app.patch("/api/admin/bio-pages/:bioId", admin, async (req, res) => {
+  const { bioId } = req.params;
+  if (!/^[a-f0-9-]{36}$/i.test(bioId)) throw fail(400, "Geçersiz kayıt kimliği.");
+  const values = req.body || {};
+  const title = String(values.profile_title ?? "").trim().slice(0, 500);
+  const bio = String(values.profile_bio ?? "").trim().slice(0, 5000);
+  if (typeof values.slug !== "string") throw fail(400, "Bio sayfa adresi gerekli.");
+  slugCheck(values.slug);
+  await transaction(async (connection) => {
+    const [rows] = await connection.execute("SELECT id FROM bio_pages WHERE id=? FOR UPDATE", [bioId]);
+    if (!rows[0]) throw fail(404, "Bio sayfası bulunamadı.");
+    await connection.execute("UPDATE slugs SET slug=? WHERE resource_id=?", [values.slug, bioId]);
+    await connection.execute("UPDATE bio_pages SET profile_title=?,profile_bio=?,slug=?,is_published=? WHERE id=?", [title || null, bio || null, values.slug, values.is_published === true, bioId]);
+  });
+  res.json({ data: { id: bioId } });
+});
+
+app.delete("/api/admin/bio-pages/:bioId", admin, async (req, res) => {
+  const { bioId } = req.params;
+  if (!/^[a-f0-9-]{36}$/i.test(bioId)) throw fail(400, "Geçersiz kayıt kimliği.");
+  await transaction(async (connection) => {
+    const [rows] = await connection.execute("SELECT id FROM bio_pages WHERE id=? FOR UPDATE", [bioId]);
+    if (!rows[0]) throw fail(404, "Bio sayfası bulunamadı.");
+    await connection.execute("DELETE FROM slugs WHERE resource_id=?", [bioId]);
+    await connection.execute("DELETE FROM bio_pages WHERE id=?", [bioId]);
+  });
+  res.json({ data: { id: bioId } });
+});
+
 app.post(
   "/api/admin/notifications",
   admin,
@@ -1019,6 +1184,16 @@ export async function initialize() {
   await pool.query(
     "UPDATE users SET email_verified_at=created_at WHERE email_verified_at IS NULL AND JSON_UNQUOTE(JSON_EXTRACT(metadata,'$.email_verified'))='true'",
   );
+  try {
+    await pool.query(
+      "UPDATE profiles p JOIN users u ON u.id = p.id SET p.role = 'admin' WHERE LOWER(u.email) = 'ahmet@ahmetcotur.com'",
+    );
+    await pool.query(
+      "UPDATE users SET email_verified_at = COALESCE(email_verified_at, created_at, UTC_TIMESTAMP()), access_disabled = 0 WHERE LOWER(email) = 'ahmet@ahmetcotur.com'",
+    );
+  } catch {
+    // Ignore initial migration error if tables are being set up
+  }
 }
 if (process.env.LENK_TEST !== "1") {
   await initialize();
